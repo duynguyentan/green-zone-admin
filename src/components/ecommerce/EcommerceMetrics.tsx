@@ -3,10 +3,11 @@ import {
   ArrowUpIcon,
   BoxIconLine,
   GroupIcon,
-} from "../../icons";
-import Badge from "../ui/badge/Badge";
+} from '../../icons';
+import { ITotal } from '../../pages/Dashboard/models/statistic.interface';
+import Badge from '../ui/badge/Badge';
 
-export default function EcommerceMetrics() {
+export default function EcommerceMetrics({ totals }: { totals: ITotal }) {
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-6">
       {/* <!-- Metric Item Start --> */}
@@ -18,15 +19,22 @@ export default function EcommerceMetrics() {
         <div className="flex items-end justify-between mt-5">
           <div>
             <span className="text-sm text-gray-500 dark:text-gray-400">
-              Customers
+              Khách hàng
             </span>
             <h4 className="mt-2 font-bold text-gray-800 text-title-sm dark:text-white/90">
-              3,782
+              {totals.customer.totalCustomers}
             </h4>
           </div>
-          <Badge color="success">
-            <ArrowUpIcon />
-            11.01%
+
+          <Badge
+            color={totals.customer.customerChange >= 0 ? 'success' : 'error'}
+          >
+            {totals.customer.customerChange >= 0 ? (
+              <ArrowUpIcon />
+            ) : (
+              <ArrowDownIcon />
+            )}
+            {totals.customer.customerChange}%
           </Badge>
         </div>
       </div>
@@ -40,16 +48,20 @@ export default function EcommerceMetrics() {
         <div className="flex items-end justify-between mt-5">
           <div>
             <span className="text-sm text-gray-500 dark:text-gray-400">
-              Orders
+              Đơn hàng
             </span>
             <h4 className="mt-2 font-bold text-gray-800 text-title-sm dark:text-white/90">
-              5,359
+              {totals.order.totalOrders}
             </h4>
           </div>
 
-          <Badge color="error">
-            <ArrowDownIcon />
-            9.05%
+          <Badge color={totals.order.orderChange >= 0 ? 'success' : 'error'}>
+            {totals.order.orderChange >= 0 ? (
+              <ArrowUpIcon />
+            ) : (
+              <ArrowDownIcon />
+            )}
+            {totals.order.orderChange}%
           </Badge>
         </div>
       </div>

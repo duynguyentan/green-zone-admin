@@ -1,0 +1,20 @@
+<svg
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <!-- Mái hiên cửa hàng -->
+  <path d="M4 4H20L18 10H6L4 4Z" />
+  
+  <!-- Thân cửa hàng -->
+  <path d="M6 10V20H18V10" />
+  
+  <!-- Cửa ra vào -->
+  <path d="M10 20V14H14V20" />
+</svg>

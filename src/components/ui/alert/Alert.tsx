@@ -1,12 +1,14 @@
-import { Link } from "react-router";
+import { Link } from 'react-router';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface AlertProps {
-  variant: "success" | "error" | "warning" | "info"; // Alert type
+  variant: 'success' | 'error' | 'warning' | 'info'; // Alert type
   title: string; // Title of the alert
   message: string; // Message of the alert
   showLink?: boolean; // Whether to show the "Learn More" link
   linkHref?: string; // Link URL
   linkText?: string; // Link text
+  isVisible: boolean;
 }
 
 const Alert: React.FC<AlertProps> = ({
@@ -14,30 +16,31 @@ const Alert: React.FC<AlertProps> = ({
   title,
   message,
   showLink = false,
-  linkHref = "#",
-  linkText = "Learn more",
+  linkHref = '#',
+  linkText = 'Learn more',
+  isVisible = true,
 }) => {
   // Tailwind classes for each variant
   const variantClasses = {
     success: {
       container:
-        "border-success-500 bg-success-50 dark:border-success-500/30 dark:bg-success-500/15",
-      icon: "text-success-500",
+        'border-success-500 bg-success-50 dark:border-success-500/30 dark:bg-success-500/15',
+      icon: 'text-success-500',
     },
     error: {
       container:
-        "border-error-500 bg-error-50 dark:border-error-500/30 dark:bg-error-500/15",
-      icon: "text-error-500",
+        'border-error-500 bg-error-50 dark:border-error-500/30 dark:bg-error-500/15',
+      icon: 'text-error-500',
     },
     warning: {
       container:
-        "border-warning-500 bg-warning-50 dark:border-warning-500/30 dark:bg-warning-500/15",
-      icon: "text-warning-500",
+        'border-warning-500 bg-warning-50 dark:border-warning-500/30 dark:bg-warning-500/15',
+      icon: 'text-warning-500',
     },
     info: {
       container:
-        "border-blue-light-500 bg-blue-light-50 dark:border-blue-light-500/30 dark:bg-blue-light-500/15",
-      icon: "text-blue-light-500",
+        'border-blue-light-500 bg-blue-light-50 dark:border-blue-light-500/30 dark:bg-blue-light-500/15',
+      icon: 'text-blue-light-500',
     },
   };
 
@@ -112,32 +115,42 @@ const Alert: React.FC<AlertProps> = ({
   };
 
   return (
-    <div
-      className={`rounded-xl border p-4 ${variantClasses[variant].container}`}
-    >
-      <div className="flex items-start gap-3">
-        <div className={`-mt-0.5 ${variantClasses[variant].icon}`}>
-          {icons[variant]}
-        </div>
+    <AnimatePresence>
+      {isVisible && (
+        <motion.div
+          initial={{ y: -40, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: -30, opacity: 0 }}
+          transition={{ duration: 0.5 }}
+          className={`fixed top-16 left-1/2 -translate-x-1/2 rounded-xl border p-5 ${variantClasses[variant].container} z-[9999]`}
+        >
+          <div className="flex items-start gap-3">
+            <div className={`-mt-0.5 ${variantClasses[variant].icon}`}>
+              {icons[variant]}
+            </div>
 
-        <div>
-          <h4 className="mb-1 text-sm font-semibold text-gray-800 dark:text-white/90">
-            {title}
-          </h4>
+            <div>
+              <h4 className="mb-1 text-sm font-semibold text-gray-800 dark:text-white/90">
+                {title}
+              </h4>
 
-          <p className="text-sm text-gray-500 dark:text-gray-400">{message}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                {message}
+              </p>
 
-          {showLink && (
-            <Link
-              to={linkHref}
-              className="inline-block mt-3 text-sm font-medium text-gray-500 underline dark:text-gray-400"
-            >
-              {linkText}
-            </Link>
-          )}
-        </div>
-      </div>
-    </div>
+              {showLink && (
+                <Link
+                  to={linkHref}
+                  className="inline-block mt-3 text-sm font-medium text-gray-500 underline dark:text-gray-400"
+                >
+                  {linkText}
+                </Link>
+              )}
+            </div>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 };
 

@@ -34,12 +34,12 @@ export default function DefaultInputs() {
         </div>
         <div>
           <Label>Select Input</Label>
-          <Select
+          {/* <Select
             options={options}
             placeholder="Select an option"
-            onChange={handleSelectChange}
+            // onChange={handleSelectChange}
             className="dark:bg-dark-900"
-          />
+          /> */}
         </div>
         <div>
           <Label>Password Input</Label>
