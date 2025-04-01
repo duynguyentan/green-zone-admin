@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Table,
   TableBody,
@@ -6,30 +6,27 @@ import {
   TableHeader,
   TableRow,
 } from '../../../components/ui/table';
-import { deleteStoreApi, getStoreApi } from '../../../api/modules';
+import {
+  createStoreApi,
+  deleteStoreApi,
+  getStoreApi,
+} from '../../../api/modules';
 import { useModal } from '../../../hooks/useModal';
 import Button from '../../../components/ui/button/Button';
 import { MoreDotIcon, PlusIcon } from '../../../icons';
 import { Dropdown } from '../../../components/ui/dropdown/Dropdown';
 import { DropdownItem } from '../../../components/ui/dropdown/DropdownItem';
 import { Modal } from '../../../components/ui/modal';
-import {
-  uploadFileApi,
-  uploadMultipleFilesApi,
-} from '../../../api/modules/upload';
+import { uploadMultipleFilesApi } from '../../../api/modules/upload';
 import Alert from '../../../components/ui/alert/Alert';
 import { formatDate } from '../../../common/utils/dateUtils';
 import { IStore } from '../models/store.interface';
 import StoreDetail from './StoreDetail';
 import BasePagination from '../../../components/pagination/BasePagination';
-import Select from '../../../components/form/Select';
-import {
-  getDistrictApi,
-  getProvinceApi,
-  getWardApi,
-} from '../../../api/modules/address';
-import { IDistrict, IProvince } from '../models/location.interface';
+import { getLatLongApi, searchAddressApi } from '../../../api/modules/address';
 import InputMultipleUpload from '../../../components/form/input/InputMultipleUpload';
+import { appSettings } from '../../../api/axios/config';
+import SearchResultInput from '../../../components/form/input/SearchResultInput';
 
 export default function StoreList() {
   const [currentPage, setCurrentPage] = useState(1);
@@ -38,27 +35,44 @@ export default function StoreList() {
   const [stores, setStore] = useState<IStore[]>([]);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const { isOpen, openModal, closeModal } = useModal();
-  const [toast, setToast] = useState('');
-  const [newstore, setNewstore] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
+  const [toastSucess, setToastSuccess] = useState('');
+  const [toastError, setToastError] = useState('');
+
   const [detailSelected, setDetailSelected] = useState<IStore | null>(null);
+
+  const [search, setSearch] = useState('');
+  const [addressesResult, setAddressesResult] = useState<
+    { description: string; place_id: string }[]
+  >([]);
+
+  const [newStoreName, setNewStoreName] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-  const [provinces, setProvinces] = useState<IProvince[]>([]);
-  const [districts, setDistrict] = useState<IProvince[]>([]);
-  const [wards, setWards] = useState<IProvince[]>([]);
-  const [provinceSelected, setProvinceSelected] = useState<string | null>(null);
-  const [districtSelected, setDistrictSelected] = useState<string | null>(null);
-  const [wardSelected, setWardSelected] = useState<string | null>(null);
+  const [storeAddress, setStoreAddress] = useState<{
+    description: string;
+    place_id: string;
+  }>();
+
+  const [openTime, setOpenTime] = useState('');
+  const [closeTime, setCloseTime] = useState('');
 
   useEffect(() => {
-    getStore();
-    getProvince();
+    getListStore();
   }, []);
 
-  const getStore = async () => {
+  useEffect(() => {
+    if (search) onSearchAddress();
+  }, [search]);
+
+  const onSearchAddress = async () => {
+    const addressRes = await searchAddressApi(search);
+    setAddressesResult(addressRes.predictions);
+  };
+
+  const getListStore = async () => {
     const storeReponse = await getStoreApi(currentPage);
 
-    const { page, limit, totalDocs, totalPages, docs } = storeReponse;
+    const { page, totalDocs, totalPages, docs } = storeReponse;
 
     setCurrentPage(page);
     setStore(docs);
@@ -66,37 +80,40 @@ export default function StoreList() {
     setTotalPages(totalPages);
   };
 
-  const getProvince = async () => {
-    const provincesRes = await getProvinceApi();
-    setProvinces(provincesRes);
-  };
-
-  const getDistrict = async (provinceCode: string) => {
-    const districtRes = await getDistrictApi(provinceCode);
-    setDistrict(districtRes.districts);
-  };
-
-  const getWard = async (districtCode: string) => {
-    const wardRes = await getWardApi(districtCode);
-    setWards(wardRes.wards);
-  };
-
-  const onAddstore = async () => {
+  const onAddStore = async () => {
     try {
-      // if (!newstore || !selectedFiles) {
-      //   setToast('Vui lòng nhập tên danh mục và chọn ảnh!');
-      //   return;
-      // }
+      if (!newStoreName || !phoneNumber || !storeAddress?.description) {
+        setToastError('Thông tin sản phẩm chưa đầy đủ');
+        return;
+      }
 
       const uploadResponse = await uploadMultipleFilesApi(selectedFiles);
-      console.log('uploadResponse: ', uploadResponse);
+      if (!uploadResponse || !uploadResponse.urls.length) {
+        setToastError('Tải ảnh lên thất bại');
+        return;
+      }
 
-      // setToast('Thêm danh mục thành công!');
-      // closeModal();
+      const imagesUrls = uploadResponse.urls.map(
+        (url) => appSettings.BASE_API_URL + url
+      );
+      const { result } = await getLatLongApi(storeAddress?.place_id);
+
+      await createStoreApi({
+        name: newStoreName,
+        phoneNumber,
+        images: imagesUrls,
+        address: storeAddress.description,
+        latitude: result.geometry.location.lat.toString(),
+        longitude: result.geometry.location.lng.toString(),
+        openTime,
+        closeTime,
+      });
+
+      getListStore();
+      setToastSuccess('Thêm cửa hàng thành công!');
+      closeModal();
     } catch (error) {
       console.error('Create store error:', error);
-    } finally {
-      closeModal();
     }
   };
 
@@ -109,20 +126,32 @@ export default function StoreList() {
   };
 
   const onDeleteStore = async (storeId: string) => {
-    const deleteReponse = await deleteStoreApi(storeId);
+    try {
+      const confirmDelete = window.confirm(
+        'Bạn có chắc chắn muốn xóa cửa hàng này?'
+      );
+      if (!confirmDelete) return;
 
-    getStore();
+      await deleteStoreApi(storeId);
+
+      setToastSuccess('Xóa cửa hàng thành công!');
+      await getListStore();
+    } catch (error) {
+      console.error('Delete store error:', error);
+      setToastError('Xóa cửa hàng thất bại, vui lòng thử lại!');
+    }
   };
 
   useEffect(() => {
-    if (toast) {
+    if (toastSucess || toastError) {
       const timer = setTimeout(() => {
-        setToast('');
+        setToastSuccess('');
+        setToastError('');
       }, 3000);
 
       return () => clearTimeout(timer);
     }
-  }, [toast]);
+  }, [toastSucess, toastError]);
 
   return (
     <div>
@@ -270,19 +299,33 @@ export default function StoreList() {
           </h5>
           <div className="mt-4">
             <div className="mb-3">
+              <div className="mb-3">
+                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-400">
+                  Địa chỉ <span className="text-red-500">*</span>
+                </label>
+                <SearchResultInput
+                  placeholder="Tìm kiếm ..."
+                  onSearch={setSearch}
+                  results={addressesResult}
+                  onSelect={(placeId: string, description: string) => {
+                    setStoreAddress({ place_id: placeId, description });
+                  }}
+                />
+              </div>
+
               <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-400">
-                Tên cửa hàng
+                Tên cửa hàng <span className="text-red-500">*</span>
               </label>
               <input
                 type="input"
-                value={newstore}
-                onChange={(e) => setNewstore(e.target.value)}
+                value={newStoreName}
+                onChange={(e) => setNewStoreName(e.target.value)}
                 className="dark:bg-dark-700 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-success-300 focus:outline-hidden focus:ring-3 focus:ring-success-500/10 dark:border-gray-700 dark:bg-gray-700 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-success-800"
               />
             </div>
             <div className="mb-3">
               <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-400">
-                Số điện thoại
+                Số điện thoại <span className="text-red-500">*</span>
               </label>
               <input
                 type="input"
@@ -293,7 +336,7 @@ export default function StoreList() {
             </div>
             <div className="mb-3">
               <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-400">
-                Hình ảnh
+                Hình ảnh sản phẩm <span className="text-red-500">*</span>
               </label>
 
               <InputMultipleUpload
@@ -303,36 +346,27 @@ export default function StoreList() {
             </div>
 
             <div className="mb-3">
-              <Select
-                placeholder="Cửa hàng: Tỉnh / Thành phố"
-                options={provinces.map((item) => ({
-                  label: item.name,
-                  value: item.code.toString(),
-                }))}
-                onChange={(value) => value && getDistrict(value)}
-              />
-            </div>
-
-            <div className="mb-3">
-              <Select
-                placeholder="Cửa hàng: Quận / Huyện"
-                options={districts.map((item) => ({
-                  label: item.name,
-                  value: item.code.toString(),
-                }))}
-                onChange={(value) => value && getWard(value)}
-              />
-            </div>
-
-            <div className="mb-3">
-              <Select
-                placeholder="Cửa hàng: Xã / Phường"
-                options={wards.map((item) => ({
-                  label: item.name,
-                  value: item.code.toString(),
-                }))}
-                onChange={(value) => setWardSelected(value)}
-              />
+              <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-400">
+                Thời gian mở / đóng cửa (hh:mm:ss AM/PM)
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                <input
+                  type="time"
+                  step="1"
+                  value={openTime}
+                  placeholder="hh:mm:ss AM/PM"
+                  onChange={(e) => setOpenTime(e.target.value)}
+                  className="dark:bg-dark-700 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-success-300 focus:outline-hidden focus:ring-3 focus:ring-success-500/10 dark:border-gray-700 dark:bg-gray-700 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-success-800"
+                />
+                <input
+                  type="time"
+                  step="1"
+                  value={closeTime}
+                  placeholder="hh:mm:ss AM/PM"
+                  onChange={(e) => setCloseTime(e.target.value)}
+                  className="dark:bg-dark-700 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-success-300 focus:outline-hidden focus:ring-3 focus:ring-success-500/10 dark:border-gray-700 dark:bg-gray-700 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-success-800"
+                />
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-3 mt-6 modal-footer sm:justify-end">
@@ -344,7 +378,7 @@ export default function StoreList() {
               Đóng
             </button>
             <button
-              onClick={onAddstore}
+              onClick={onAddStore}
               type="button"
               className="btn btn-success btn-update-event flex w-full justify-center rounded-lg bg-success-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-success-600 sm:w-auto"
             >
@@ -360,12 +394,21 @@ export default function StoreList() {
         store={detailSelected}
       />
 
-      {toast && (
+      {toastSucess && (
         <Alert
-          isVisible={!!toast}
-          variant={toast ? 'error' : 'success'}
-          title={toast ? 'Thông tin danh mục không chính xác' : 'Thành công'}
-          message={toast || 'Danh mục đã được thêm thành công!'}
+          isVisible={!!toastSucess}
+          variant={'success'}
+          title={'Thành công'}
+          message={toastSucess || 'Thêm thành công!'}
+        />
+      )}
+
+      {toastError && (
+        <Alert
+          isVisible={!!toastError}
+          variant={'error'}
+          title={'Thất bại'}
+          message={toastError || 'Thêm thất bại!'}
         />
       )}
     </div>

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Table,
   TableBody,
@@ -8,7 +8,6 @@ import {
 } from '../../../components/ui/table';
 import {
   createEmployeeApi,
-  deleteEmployeeApi,
   getEmployeeApi,
   getStoreApi,
   updateEmployeePasswordApi,
@@ -82,7 +81,7 @@ export default function EmployeeList() {
       search
     );
 
-    const { page, limit, totalDocs, totalPages, docs } = employeeReponse;
+    const { page, totalDocs, totalPages, docs } = employeeReponse;
 
     setCurrentPage(page);
     setEmployees(docs);
@@ -93,7 +92,7 @@ export default function EmployeeList() {
   const getStore = async () => {
     const storeReponse = await getStoreApi(currentPage);
 
-    const { page, limit, totalDocs, totalPages, docs } = storeReponse;
+    const { docs } = storeReponse;
 
     setStore(docs);
   };
@@ -129,14 +128,11 @@ export default function EmployeeList() {
 
       setToast('Thêm nhân viên thành công!');
       getEmployee();
+      closeModal1();
     } catch (error) {
       console.error('Create Employee error:', error);
-    } finally {
-      closeModal1();
     }
   };
-
-  const onEditEmployee = async () => {};
 
   const toggleDropdown = (id: string) => {
     setOpenMenuId((prev) => (prev === id ? null : id));
@@ -151,10 +147,9 @@ export default function EmployeeList() {
       await updateEmployeePasswordApi(phoneNumber, newPassword);
 
       setToast('Cập nhật mật khẩu thành công');
+      closeModal2();
     } catch (error) {
       console.log('update password error: ', error);
-    } finally {
-      closeModal2();
     }
   };
 
@@ -170,7 +165,7 @@ export default function EmployeeList() {
 
   return (
     <div>
-      <Button 
+      <Button
         onClick={openModal1}
         className="mb-4"
         size="sm"

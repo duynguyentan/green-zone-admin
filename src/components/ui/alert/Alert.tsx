@@ -118,11 +118,11 @@ const Alert: React.FC<AlertProps> = ({
     <AnimatePresence>
       {isVisible && (
         <motion.div
-          initial={{ y: -40, opacity: 0 }}
+          initial={{ y: -50, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          exit={{ y: -30, opacity: 0 }}
+          exit={{ y: -40, opacity: 0 }}
           transition={{ duration: 0.5 }}
-          className={`fixed top-16 left-1/2 -translate-x-1/2 rounded-xl border p-5 ${variantClasses[variant].container} z-[9999]`}
+          className={`fixed top-16 left-1/2 -translate-x-1/2 rounded-xl border p-5 ${variantClasses[variant].container} z-[99999]`}
         >
           <div className="flex items-start gap-3">
             <div className={`-mt-0.5 ${variantClasses[variant].icon}`}>

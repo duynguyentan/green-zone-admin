@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Table,
   TableBody,
@@ -17,17 +17,10 @@ import { MoreDotIcon, PlusIcon } from '../../../icons';
 import { Dropdown } from '../../../components/ui/dropdown/Dropdown';
 import { DropdownItem } from '../../../components/ui/dropdown/DropdownItem';
 import { Modal } from '../../../components/ui/modal';
-import InputUpload from '../../../components/form/input/InputUpload';
-import { uploadFileApi } from '../../../api/modules/upload';
 import Alert from '../../../components/ui/alert/Alert';
-import BasePagination from '../../../components/pagination/BasePagination';
 import { formatDate } from '../../../common/utils/dateUtils';
-import { IBaseResponse } from '../../../common/interfaces/reponse.interface';
-
-export interface ITopping extends IBaseResponse {
-  name: string;
-  extraPrice: string;
-}
+import { ITopping } from '../../product/models/product.interface';
+import { toVNDFormat } from '../../../common/utils/money';
 
 export default function ToppingList() {
   const [toppings, setToppings] = useState<ITopping[]>([]);
@@ -60,10 +53,9 @@ export default function ToppingList() {
 
       getTopping();
       setToast('Thêm mới topping thành công!');
+      closeModal();
     } catch (error) {
       console.error('Create topping error:', error);
-    } finally {
-      closeModal();
     }
   };
 
@@ -72,10 +64,9 @@ export default function ToppingList() {
       await deleteToppingApi(toppingId);
       getTopping();
       setToast('Xóa thành công');
+      closeModal();
     } catch (error) {
       console.error('Delte topping error:', error);
-    } finally {
-      setToast('');
     }
   };
 
@@ -142,7 +133,7 @@ export default function ToppingList() {
                     {topping.name}
                   </TableCell>
                   <TableCell className="px-4 py-3 text-gray-700 text-center text-theme-sm dark:text-gray-400">
-                    {topping.extraPrice}
+                    {toVNDFormat(topping.extraPrice)}
                   </TableCell>
                   <TableCell className="px-4 py-3 text-gray-700 text-center text-theme-sm dark:text-gray-400">
                     {formatDate(topping.createdAt)}

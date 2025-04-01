@@ -1,30 +1,26 @@
 import EcommerceMetrics from '../../components/ecommerce/EcommerceMetrics';
 import MonthlySalesChart from '../../components/ecommerce/MonthlySalesChart';
-import MonthlyTarget from '../../components/ecommerce/MonthlyTarget';
 import RecentOrders from '../../components/ecommerce/RecentOrders';
 import DemographicCard from '../../components/ecommerce/DemographicCard';
 import PageMeta from '../../components/common/PageMeta';
 import { useEffect, useState } from 'react';
 import { getSummaryApi } from '../../api/modules';
-import { IOrderByProvince, ITotal } from './models/statistic.interface';
-
+import { OrderStatsByStore, ITotal } from './models/statistic.interface';
 
 export default function Home() {
   const [totals, setTotals] = useState<ITotal>({
     customer: { totalCustomers: 0, customerChange: 0 },
     order: { totalOrders: 0, orderChange: 0 },
   });
-  const [monthlySales, setMonthlySales] = useState<number[]>([]);
-  const [orderByProvince, setOrderByProvince] = useState<IOrderByProvince[]>(
-    []
-  );
+  const [orderStatsByStore, setOrderStatsByStore] = useState<
+    OrderStatsByStore[]
+  >([]);
 
   const getSummary = async () => {
     const summaryRespon = await getSummaryApi();
 
     setTotals(summaryRespon.totals);
-    setMonthlySales(summaryRespon.monthlySales);
-    setOrderByProvince(summaryRespon.customerByProvince);
+    setOrderStatsByStore(summaryRespon.orderStatsByStore);
   };
 
   useEffect(() => {
@@ -38,7 +34,7 @@ export default function Home() {
         <div className="col-span-12 space-y-6 xl:col-span-7">
           <EcommerceMetrics totals={totals} />
 
-          <MonthlySalesChart monthlySales={monthlySales} />
+          <MonthlySalesChart />
         </div>
 
         {/* <div className="col-span-12 xl:col-span-5">
@@ -50,7 +46,7 @@ export default function Home() {
         </div> */}
 
         <div className="col-span-12 xl:col-span-5">
-          <DemographicCard orderByProvince={orderByProvince} />
+          <DemographicCard orderStatsByStore={orderStatsByStore} />
         </div>
 
         <div className="col-span-12">

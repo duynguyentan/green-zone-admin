@@ -1,8 +1,7 @@
-import { ICurrentUser } from '../../../common/interfaces/currentUser.interface';
 import { IBaseResponse } from '../../../common/interfaces/reponse.interface';
 import { DeliveryMethod } from './deliveryMethod.interface';
 import { OrderStatus } from './orderStatus.interface';
-import { PaymentMethod } from './paymentMethod.interface copy';
+import { PaymentMethod } from './paymentMethod.interface';
 
 interface IProduct {
   _id: string;
@@ -27,15 +26,6 @@ export interface IOrderItem {
   toppingItems?: IToppingItem[];
 }
 
-export interface IShippingAddress {
-  consigneeName: string;
-  consigneePhone: string;
-  district: string;
-  province: string;
-  specificAddress: string;
-  ward: string;
-}
-
 interface IStore {
   name: string;
   phoneNumber: string;
@@ -57,7 +47,10 @@ interface IEmployee {
 
 interface IVoucher {
   _id: string;
-  // Các thông tin khác của voucher nếu có
+  code: string;
+  discountType: string;
+  discountValue: number;
+  name: string;
 }
 
 export interface IOrderDetail extends IBaseResponse {
@@ -66,7 +59,9 @@ export interface IOrderDetail extends IBaseResponse {
   note: string;
   shippingFee: number;
   status: OrderStatus;
-  shippingAddress: IShippingAddress;
+  shippingAddress: string;
+  consigneeName: string;
+  consigneePhone: string;
   paymentMethod: PaymentMethod;
   owner: {
     avatar: string;

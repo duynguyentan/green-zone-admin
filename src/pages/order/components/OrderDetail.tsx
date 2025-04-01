@@ -13,14 +13,12 @@ import {
   DeliveryMethod,
   DeliveryMethodLabel,
 } from '../models/deliveryMethod.interface';
-import { PaymentMethodLabel } from '../models/paymentMethod.interface copy';
+import { PaymentMethodLabel } from '../models/paymentMethod.interface';
 import {
   LocationIcon,
   PaymentMethodIcon,
   PaymentStatusIcon,
-  PhoneIcon,
   ShippingMethodIcon,
-  TimeIcon,
   UserIcon,
 } from '../../../icons';
 
@@ -226,27 +224,24 @@ const OrderDetail: React.FC<OrderDetailProps> = ({
                     </h6>
 
                     <span className="text-sm font-medium text-gray-800 dark:text-white/90">
-                      {orderDetail?.owner?.phoneNumber ||
-                      orderDetail?.shippingAddress?.consigneePhone ? (
+                      {orderDetail?.deliveryMethod === 'delivery' ? (
+                        <div className="flex">
+                          <span className="text-sm font-medium">
+                            {orderDetail?.consigneeName}
+                          </span>
+                          <span> - </span>
+                          <span className="text-sm font-medium">
+                            {orderDetail?.consigneePhone}
+                          </span>
+                        </div>
+                      ) : orderDetail?.owner ? (
                         <div className="flex items-center gap-1">
                           <span className="text-sm font-medium">
-                            {orderDetail?.deliveryMethod === 'delivery'
-                              ? orderDetail?.shippingAddress?.consigneeName
-                              : `${orderDetail?.owner?.firstName || ''} ${
-                                  orderDetail?.owner?.lastName || ''
-                                }`.trim()}
+                            {orderDetail?.owner?.firstName}{' '}
+                            {orderDetail?.owner?.lastName}
                           </span>
-                          {orderDetail?.owner?.phoneNumber ||
-                          orderDetail?.shippingAddress?.consigneePhone ? (
-                            <>
-                              <span>-</span>
-                              <span>
-                                {orderDetail?.deliveryMethod === 'delivery'
-                                  ? orderDetail?.shippingAddress?.consigneePhone
-                                  : orderDetail?.owner?.phoneNumber}
-                              </span>
-                            </>
-                          ) : null}
+                          <span> - </span>
+                          <span>{orderDetail?.owner?.phoneNumber}</span>
                         </div>
                       ) : (
                         'Khách vãng lai'
@@ -255,18 +250,14 @@ const OrderDetail: React.FC<OrderDetailProps> = ({
                   </div>
                 </div>
 
-                {(orderDetail?.owner?.phoneNumber ||
-                  orderDetail?.shippingAddress?.consigneePhone) && (
-                  <div className="flex items-center text-gray-600 dark:text-gray-400 gap-2 mb-1">
+                {orderDetail?.shippingAddress && (
+                  <div className="flex text-gray-600 dark:text-gray-400 gap-2 mb-1">
                     <h6 className="whitespace-nowrap flex items-center gap-1 text-xs leading-normal text-gray-600 dark:text-gray-400">
                       <LocationIcon />
                       Địa chỉ:
                     </h6>
                     <span className="text-sm font-medium text-gray-800 dark:text-white/90">
-                      {orderDetail.shippingAddress.specificAddress},{' '}
-                      {orderDetail.shippingAddress.ward} -{' '}
-                      {orderDetail.shippingAddress.district} -{' '}
-                      {orderDetail.shippingAddress.province}
+                      {orderDetail?.shippingAddress}
                     </span>
                   </div>
                 )}
@@ -277,7 +268,7 @@ const OrderDetail: React.FC<OrderDetailProps> = ({
                     Phương thức thanh toán:
                   </h6>
 
-                  <span className="text-sm font-medium text-gray-800 dark:text-white/90">
+                  <span className="text-xs font-medium text-gray-800 dark:text-white/90">
                     {PaymentMethodLabel[orderDetail.paymentMethod]}
                   </span>
                 </div>
@@ -334,7 +325,7 @@ const OrderDetail: React.FC<OrderDetailProps> = ({
                     Thành tiền:
                   </h6>
 
-                  <span className="text-sm font-medium text-gray-800 dark:text-white/90">
+                  <span className="text-sm font-medium text-green-600 dark:text-white/90">
                     {toVNDFormat(orderDetail.totalPrice)}
                   </span>
                 </div>
@@ -345,8 +336,8 @@ const OrderDetail: React.FC<OrderDetailProps> = ({
                       Voucher:
                     </h6>
 
-                    <span className="text-sm font-medium text-gray-800 dark:text-white/90">
-                      {orderDetail.voucher._id}
+                    <span className="text-sm font-medium text-blue-500 dark:text-white/90">
+                      {orderDetail.voucher.code}
                     </span>
                   </div>
                 )}
@@ -356,17 +347,17 @@ const OrderDetail: React.FC<OrderDetailProps> = ({
                     Phí giao hàng:
                   </h6>
 
-                  <span className="text-sm font-medium text-gray-800 dark:text-white/90">
+                  <span className="text-sm font-medium text-orange-500 dark:text-white/90">
                     {toVNDFormat(orderDetail.shippingFee)}
                   </span>
                 </div>
 
                 <div className="flex items-center  justify-between text-gray-600 font-semibold dark:text-gray-400 gap-2">
                   <h6 className="flex items-center gap-1 text-xs leading-normal text-gray-700 dark:text-gray-400">
-                    Số tiền thanh toán:
+                    Tổng đơn hàng:
                   </h6>
 
-                  <span className="text-base font-medium  text-gray-800 dark:text-white/90">
+                  <span className="text-base text-red-500 font-semibold dark:text-white/90">
                     {toVNDFormat(orderDetail.totalPrice)}
                   </span>
                 </div>

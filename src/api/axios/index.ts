@@ -1,10 +1,9 @@
 import axios, {
   AxiosInstance,
-  AxiosRequestConfig,
   AxiosResponse,
   InternalAxiosRequestConfig,
 } from 'axios';
-import throttle from 'lodash/throttle';
+// import throttle from 'lodash/throttle';
 import { appSettings } from './config';
 import StorageService from '../../common/utils/localStorage';
 

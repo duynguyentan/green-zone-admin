@@ -57,7 +57,7 @@ function InputUpload({ selectedFile, onFileSelect }: InputUploadProps) {
         onChange={handleFileChange}
       />
 
-      <div className="rounded-xl border-dashed border-gray-300 p-4 lg:p-5 bg-gray-50 dark:border-gray-700 dark:bg-gray-900 flex flex-col items-center">
+      <div className="rounded-xl border-dashed border-gray-300 p-2 lg:p-5 bg-gray-50 dark:border-gray-700 dark:bg-gray-900 flex flex-col items-center">
         {preview ? (
           <div className="relative">
             <img

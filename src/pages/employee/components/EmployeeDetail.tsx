@@ -1,8 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Modal } from '../../../components/ui/modal';
-import { getOrderByIdApi } from '../../../api/modules';
-import Badge from '../../../components/ui/badge/Badge';
-
 import { formatDate } from '../../../common/utils/dateUtils';
 import {
   LocationIcon,

@@ -1,12 +1,10 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router';
 import SignIn from './pages/AuthPages/SignIn';
-import SignUp from './pages/AuthPages/SignUp';
 import NotFound from './pages/OtherPage/NotFound';
 import AppLayout from './layout/AppLayout';
 import { ScrollToTop } from './components/common/ScrollToTop';
 import Home from './pages/Dashboard/Home';
 import Category from './pages/category/CategoryPage';
-import BasicTables from './pages/Tables/BasicTables';
 import { PrivateRoute, RedirectRoute } from './components/route';
 import Product from './pages/product/ProductPage';
 import Order from './pages/order/OrderPage';
@@ -14,6 +12,7 @@ import Store from './pages/store/StorePage';
 import Employee from './pages/employee/EmpoyeePage';
 import Customer from './pages/customer/CustomerPage';
 import Topping from './pages/topping/ToppingPage';
+import Voucher from './pages/voucher/VoucherPage';
 
 export default function App() {
   return (
@@ -31,6 +30,7 @@ export default function App() {
             <Route index path="/order" element={<Order />} />
             <Route index path="/store" element={<Store />} />
             <Route index path="/topping" element={<Topping />} />
+            <Route index path="/voucher" element={<Voucher />} />
 
             {/* Others Page */}
             <Route path="/employee" element={<Employee />} />
@@ -38,9 +38,6 @@ export default function App() {
 
             {/* Forms */}
             {/* <Route path="/form-elements" element={<FormElements />} /> */}
-
-            {/* Tables */}
-            <Route path="/basic-tables" element={<BasicTables />} />
 
             {/* Ui Elements */}
             {/* <Route path="/alerts" element={<Alerts />} />

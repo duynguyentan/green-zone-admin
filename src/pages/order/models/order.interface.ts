@@ -1,5 +1,5 @@
 import { IBaseResponse } from '../../../common/interfaces/reponse.interface';
-import { IOrderItem, IShippingAddress } from './orderDetail.interface';
+import { IOrderItem } from './orderDetail.interface';
 import { OrderStatus } from './orderStatus.interface';
 
 export interface IOrder extends IBaseResponse {
@@ -16,7 +16,9 @@ export interface IOrder extends IBaseResponse {
     lastName: string;
     phoneNumber: string;
   };
-  shippingAddress?: IShippingAddress;
+  consigneeName?: string;
+  consigneePhone?: string;
+  shippingAddress?: string;
   shipper?: string | null;
   creator?: string | null;
   store: {
@@ -27,6 +29,5 @@ export interface IOrder extends IBaseResponse {
     province: string;
   };
   voucher?: string | null;
-
   orderItems: IOrderItem[];
 }

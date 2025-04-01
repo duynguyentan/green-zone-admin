@@ -6,136 +6,97 @@ import {
   TableHeader,
   TableRow,
 } from '../../../components/ui/table';
+import {
+  createVoucherApi,
+  deleteVoucherApi,
+  getAllVoucherApi,
+  uploadFileApi,
+} from '../../../api/modules';
 import { useModal } from '../../../hooks/useModal';
 import Button from '../../../components/ui/button/Button';
 import { MoreDotIcon, PlusIcon } from '../../../icons';
 import { Dropdown } from '../../../components/ui/dropdown/Dropdown';
 import { DropdownItem } from '../../../components/ui/dropdown/DropdownItem';
 import { Modal } from '../../../components/ui/modal';
-import { uploadFileApi } from '../../../api/modules/upload';
 import Alert from '../../../components/ui/alert/Alert';
 import { formatDate } from '../../../common/utils/dateUtils';
-import BasePagination from '../../../components/pagination/BasePagination';
-import { IProduct, ITopping } from '../models/product.interface';
-import {
-  addToppingApi,
-  createProductApi,
-  createVariantApi,
-  deleteProductApi,
-  getAllProductApi,
-  getCategoryApi,
-  getToppingApi,
-} from '../../../api/modules';
-import ProductDetail from './ProductDetail';
-import { toVNDFormat } from '../../../common/utils/money';
+import VoucherDetail from './VoucherDetail';
+import { IVoucher } from '../models/voucher.interface';
 import InputUpload from '../../../components/form/input/InputUpload';
-import Select from '../../../components/form/Select';
-import { ICategory } from '../../category/models/category.interface';
-import SearchInput from '../../../components/form/input/SearchInput';
 import TextArea from '../../../components/form/input/TextArea';
-import MultiSelect from '../../../components/form/MultiSelect';
+import DatePicker from '../../../components/form/input/DatePicker';
 import { appSettings } from '../../../api/axios/config';
-import VariantInput from './VariantInput';
 
-export default function ProductList() {
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalDocs, setTotalDocs] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [categories, setCategories] = useState<ICategory[]>([]);
-  const [products, setProducts] = useState<IProduct[]>([]);
-  const [toppings, setToppings] = useState<ITopping[]>([]);
-
+export default function VoucherList() {
+  const [vouchers, setVouchers] = useState<IVoucher[]>([]);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const { isOpen, openModal, closeModal } = useModal();
+  const [detailSelected, setDetailSelected] = useState<IVoucher | null>(null);
+
   const [toastSucess, setToastSuccess] = useState('');
   const [toastError, setToastError] = useState('');
 
-  const [search, setSearch] = useState<string>('');
-  const [detailSelected, setDetailSelected] = useState<string | null>(null);
-  const [categorySelected, setCategorySelected] = useState<string | null>(null);
-
-  const [newProductName, setNewProductName] = useState('');
-  const [productDesc, setProductDesc] = useState('');
+  const [newVoucherName, setNewVoucherName] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [categoryIds, setCategoryIds] = useState<string[]>([]);
-  const [variants, setVariants] = useState<
-    { size: string; sellingPrice: number }[]
-  >([]);
-  const [toppingIds, setToppingIds] = useState<string[]>([]);
+  const [voucherDes, setVoucherDesc] = useState('');
+  const [voucherCode, setVoucherCode] = useState('');
+  const [discountValue, setDiscoundValue] = useState('');
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
 
   useEffect(() => {
-    getCategory();
+    getVoucher();
   }, []);
 
-  useEffect(() => {
-    getProduct();
-  }, [currentPage, categorySelected, search]);
-
-  const getCategory = async () => {
-    const categoryReponse = await getCategoryApi(1);
-    const toppingReponse = await getToppingApi();
-
-    const { docs } = categoryReponse;
-
-    setCategories(docs);
-    setToppings(toppingReponse);
+  const getVoucher = async () => {
+    const voucherReponse = await getAllVoucherApi();
+    setVouchers(voucherReponse);
   };
 
-  const getProduct = async () => {
-    const productReponse = await getAllProductApi(
-      currentPage,
-      null,
-      search,
-      categorySelected
-    );
-
-    const { page, totalDocs, totalPages, docs } = productReponse;
-
-    setCurrentPage(page);
-    setProducts(docs);
-    setTotalDocs(totalDocs);
-    setTotalPages(totalPages);
-  };
-
-  const onAddproduct = async () => {
+  const onAddVoucher = async () => {
     try {
-      if (!newProductName || !selectedFile || !categoryIds.length) {
-        setToastError('Thông tin sản phẩm chưa đầy đủ');
+      if (!newVoucherName || !selectedFile) {
+        setToastError('Vui lòng nhập tên voucher và chọn ảnh!');
         return;
       }
 
+      // Upload ảnh và kiểm tra lỗi
       const uploadResponse = await uploadFileApi(selectedFile);
       if (!uploadResponse || !uploadResponse.url) {
-        setToastError('Tải ảnh lên thất bại');
+        setToastError('Upload ảnh thất bại. Vui lòng thử lại!');
         return;
       }
 
-      const newProductRes = await createProductApi({
-        name: newProductName,
-        description: productDesc,
-        image: appSettings.BASE_API_URL + uploadResponse.url,
-        categoryIds,
+      // Chuyển đổi dữ liệu hợp lệ
+      const discount = parseInt(discountValue);
+      if (isNaN(discount) || discount < 0) {
+        setToastError('Giá trị giảm giá không hợp lệ!');
+        return;
+      }
+
+      // Kiểm tra ngày hợp lệ
+      if (!startDate || !endDate || new Date(startDate) >= new Date(endDate)) {
+        setToastError('Ngày bắt đầu phải nhỏ hơn ngày kết thúc!');
+        return;
+      }
+
+      await createVoucherApi({
+        name: newVoucherName,
+        image: `${appSettings.BASE_API_URL}${uploadResponse.url}`,
+        description: voucherDes,
+        code: voucherCode,
+        discountType: 'percentage',
+        discountValue: discount,
+        startDate: new Date(startDate).toISOString(),
+        endDate: new Date(endDate).toISOString(),
       });
 
-      if (!newProductRes || !newProductRes._id) {
-        setToastError('Tạo sản phẩm thất bại');
-        return;
-      }
-
-      await Promise.all(
-        variants.map((variant) => createVariantApi(newProductRes._id, variant))
-      );
-
-      if (toppingIds.length) {
-        await addToppingApi(newProductRes._id, toppingIds);
-      }
-
-      setToastSuccess('Thêm sản phẩm thành công!');
-      await getProduct();
+      setToastSuccess('Thêm voucher thành công!');
+      getVoucher();
       closeModal();
     } catch (error) {
-      console.error('Create product error:', error);
-      setToastError('Đã có lỗi xảy ra, vui lòng thử lại.');
+      console.error('Create voucher error:', error);
+      setToastError('Lỗi khi tạo voucher. Vui lòng thử lại!');
     }
   };
 
@@ -147,20 +108,20 @@ export default function ProductList() {
     setOpenMenuId(null);
   };
 
-  const onDeleteProduct = async (productId: string) => {
+  const onDeleteVoucher = async (voucherId: string) => {
     try {
       const confirmDelete = window.confirm(
-        'Bạn có chắc chắn muốn xóa sản phẩm này?'
+        'Bạn có chắc chắn muốn xóa voucher này?'
       );
       if (!confirmDelete) return;
 
-      await deleteProductApi(productId);
+      await deleteVoucherApi(voucherId);
 
-      setToastSuccess('Xóa sản phẩm thành công!');
-      await getProduct();
+      setToastSuccess('Xóa voucher thành công!');
+      getVoucher();
     } catch (error) {
-      console.error('Delete product error:', error);
-      setToastError('Xóa sản phẩm thất bại, vui lòng thử lại!');
+      console.error('Lỗi khi xóa voucher:', error);
+      setToastError('Xóa voucher thất bại. Vui lòng thử lại!');
     }
   };
 
@@ -178,7 +139,17 @@ export default function ProductList() {
   return (
     <div>
       <Button
-        onClick={openModal}
+        onClick={() => {
+          setNewVoucherName('');
+          setSelectedFile(null);
+          setVoucherDesc('');
+          setVoucherCode('');
+          setDiscoundValue('');
+          setStartDate('');
+          setEndDate('');
+
+          openModal();
+        }}
         className="mb-4"
         size="sm"
         variant="primary"
@@ -186,23 +157,6 @@ export default function ProductList() {
       >
         Thêm mới
       </Button>
-
-      <div className="mb-4 grid grid-cols-2 gap-10">
-        <SearchInput
-          placeholder="Nhập tên sản phẩm..."
-          onSearch={(value) => setSearch(value)}
-        />
-        <div className="w-full me-10">
-          <Select
-            placeholder="Lọc danh mục: Tất cả"
-            options={categories.map((item) => ({
-              label: item.name,
-              value: item._id,
-            }))}
-            onChange={(value) => setCategorySelected(value)}
-          />
-        </div>
-      </div>
 
       <div className="overflow-hidden rounded-t-xl border-t border-x border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
         <div className="max-w-full overflow-x-auto">
@@ -214,85 +168,75 @@ export default function ProductList() {
                   isHeader
                   className="px-5 py-4 font-semibold text-gray-500 text-center text-theme-xs dark:text-gray-400"
                 >
-                  Tên sản phẩm
+                  Tên
                 </TableCell>
-
                 <TableCell
                   isHeader
                   className="px-5 py-4 font-semibold text-gray-500 text-center text-theme-xs dark:text-gray-400"
                 >
                   Hình ảnh
                 </TableCell>
-
                 <TableCell
                   isHeader
                   className="px-5 py-4 font-semibold text-gray-500 text-center text-theme-xs dark:text-gray-400"
                 >
-                  Giá bán
+                  Mã giảm giá
                 </TableCell>
-
                 <TableCell
                   isHeader
                   className="px-5 py-4 font-semibold text-gray-500 text-center text-theme-xs dark:text-gray-400"
                 >
-                  Thời gian tạo
+                  Ngày bắt đầu
                 </TableCell>
-
                 <TableCell
                   isHeader
                   className="px-5 py-4 font-semibold text-gray-500 text-center text-theme-xs dark:text-gray-400"
                 >
-                  Thời gian cập nhật
+                  Ngày kết thúc
                 </TableCell>
               </TableRow>
             </TableHeader>
 
             {/* Table Body */}
             <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
-              {products?.map((product) => (
+              {vouchers?.map((voucher) => (
                 <TableRow
                   className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
-                  onClick={() => setDetailSelected(product._id)}
-                  key={product._id}
+                  onClick={() => setDetailSelected(voucher)}
+                  key={voucher._id}
                 >
                   <TableCell className="px-4 py-3 text-gray-600 text-center text-theme-sm dark:text-gray-400">
-                    {product.name}
+                    {voucher.name}
                   </TableCell>
-
                   <TableCell className="px-4 py-3 text-gray-600 flex justify-center text-theme-sm dark:text-gray-400">
                     <img
-                      src={product.image}
-                      alt={product.name}
+                      src={voucher.image}
+                      alt={voucher.name}
                       className="w-16 h-16 object-cover rounded-full"
                     />
                   </TableCell>
-
                   <TableCell className="px-4 py-3 text-gray-600 text-center text-theme-sm dark:text-gray-400">
-                    {toVNDFormat(product?.sellingPrice || '') ??
-                      'Chưa có biến thể'}
+                    {voucher.code}
                   </TableCell>
-
                   <TableCell className="px-4 py-3 text-gray-600 text-center text-theme-sm dark:text-gray-400">
-                    {formatDate(product.createdAt)}
+                    {formatDate(voucher.startDate)}
                   </TableCell>
-
                   <TableCell className="px-4 py-3 text-gray-600 text-center text-theme-sm dark:text-gray-400">
-                    {formatDate(product.updatedAt)}
+                    {formatDate(voucher.endDate)}
                   </TableCell>
-
                   <TableCell className="px-4 py-3 text-gray-700 text-center text-theme-sm dark:text-gray-400">
                     <div className="relative inline-block">
                       <button
                         className="dropdown-toggle"
                         onClick={(event) => {
                           event.stopPropagation();
-                          toggleDropdown(product._id);
+                          toggleDropdown(voucher._id);
                         }}
                       >
                         <MoreDotIcon className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 size-6" />
                       </button>
                       <Dropdown
-                        isOpen={openMenuId === product._id}
+                        isOpen={openMenuId === voucher._id}
                         onClose={closeDropdown}
                         className="w-40 p-2"
                       >
@@ -300,7 +244,7 @@ export default function ProductList() {
                           onItemClick={(event) => {
                             event.stopPropagation();
                             closeDropdown();
-                            // onDeleteProduct(product._id);
+                            // onDeleteStore(voucher._id);
                           }}
                           className="flex w-full font-normal text-left text-gray-700 rounded-lg hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
                         >
@@ -309,7 +253,7 @@ export default function ProductList() {
                         <DropdownItem
                           onItemClick={(event) => {
                             event.stopPropagation();
-                            onDeleteProduct(product._id);
+                            onDeleteVoucher(voucher._id);
                             closeDropdown();
                           }}
                           className="flex w-full font-normal text-left text-gray-700 rounded-lg hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
@@ -326,86 +270,85 @@ export default function ProductList() {
         </div>
       </div>
 
-      <BasePagination
-        page={currentPage}
-        totalDocs={totalDocs}
-        totalPages={totalPages}
-        onPageChange={(page: number) => {
-          setCurrentPage(page);
-        }}
-      />
-
       <Modal
         isOpen={isOpen}
         onClose={closeModal}
         className="max-w-[500px] p-6 lg:p-10"
       >
-        <div className="flex flex-col px-2 overflow-y-auto custom-scrollbar max-h-146">
-          <h5 className="mb-2 font-semibold text-gray-800 modal-title text-theme-xl dark:text-white/90 lg:text-2xl">
-            Thêm sản phẩm
+        <div className="flex flex-col px-2 overflow-y-auto custom-scrollbar">
+          <h5 className="mb-3 font-semibold text-gray-800 modal-title text-theme-xl dark:text-white/90 lg:text-2xl">
+            Thêm voucher
           </h5>
           <div className="mt-4">
-            <div className="mb-2">
+            <div className="mb-3">
               <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-400">
-                Tên sản phẩm
+                Tên
               </label>
               <input
                 type="input"
-                value={newProductName}
-                onChange={(e) => setNewProductName(e.target.value)}
+                value={newVoucherName}
+                onChange={(e) => setNewVoucherName(e.target.value)}
                 className="dark:bg-dark-700 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-success-300 focus:outline-hidden focus:ring-3 focus:ring-success-500/10 dark:border-gray-700 dark:bg-gray-700 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-success-800"
               />
             </div>
 
-            <div className="mb-2">
+            <div className="mb-3">
               <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-400">
-                Mô tả
+                Hình ảnh:
               </label>
-              <TextArea
-                rows={3}
-                value={productDesc}
-                error
-                onChange={(value) => setProductDesc(value)}
-              />
-            </div>
 
-            <div className="mb-2">
-              <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-400">
-                Ảnh
-              </label>
               <InputUpload
                 selectedFile={selectedFile}
                 onFileSelect={setSelectedFile}
               />
             </div>
 
-            <div className="mb-2">
-              <MultiSelect
-                label="Danh mục"
-                options={categories.map((item) => ({
-                  text: item.name,
-                  value: item._id,
-                }))}
-                onChange={(values) => setCategoryIds(values)}
+            <div className="mb-3">
+              <TextArea
+                rows={3}
+                value={voucherDes}
+                error
+                onChange={(value) => setVoucherDesc(value)}
               />
             </div>
 
-            <div className="mb-2">
-              <MultiSelect
-                label="Topping"
-                options={toppings.map((item) => ({
-                  text: item.name,
-                  value: item._id,
-                }))}
-                onChange={(values) => setToppingIds(values)}
-              />
+            <div className="mb-3 grid grid-cols-2 gap-2">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-400">
+                  Mã giảm giá
+                </label>
+                <input
+                  type="input"
+                  value={voucherCode}
+                  onChange={(e) => setVoucherCode(e.target.value)}
+                  className="dark:bg-dark-700 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-success-300 focus:outline-hidden focus:ring-3 focus:ring-success-500/10 dark:border-gray-700 dark:bg-gray-700 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-success-800"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-400">
+                  Trị giá
+                </label>
+                <input
+                  type="input"
+                  value={discountValue}
+                  onChange={(e) => setDiscoundValue(e.target.value)}
+                  className="dark:bg-dark-700 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-success-300 focus:outline-hidden focus:ring-3 focus:ring-success-500/10 dark:border-gray-700 dark:bg-gray-700 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-success-800"
+                />
+              </div>
             </div>
 
-            <div className="mb-2">
-              <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-400">
-                Size
-              </label>
-              <VariantInput setVariant={setVariants} />
+            <div className="mb-3 grid grid-cols-2 gap-2">
+              <DatePicker
+                value={startDate}
+                onChange={(value) => setStartDate(value)}
+                placeholder="Ngày bắt đầu"
+              />
+              <DatePicker
+                value={endDate}
+                onChange={(value) => setEndDate(value)}
+                placeholder=" Ngày kết thúc"
+              />
             </div>
           </div>
           <div className="flex items-center gap-3 mt-6 modal-footer sm:justify-end">
@@ -417,7 +360,7 @@ export default function ProductList() {
               Đóng
             </button>
             <button
-              onClick={onAddproduct}
+              onClick={onAddVoucher}
               type="button"
               className="btn btn-success btn-update-event flex w-full justify-center rounded-lg bg-success-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-success-600 sm:w-auto"
             >
@@ -427,10 +370,10 @@ export default function ProductList() {
         </div>
       </Modal>
 
-      <ProductDetail
+      <VoucherDetail
         isOpen={!!detailSelected}
         onClose={() => setDetailSelected(null)}
-        productId={detailSelected}
+        voucher={detailSelected}
       />
 
       {toastSucess && (
@@ -438,7 +381,7 @@ export default function ProductList() {
           isVisible={!!toastSucess}
           variant={'success'}
           title={'Thành công'}
-          message={toastSucess || 'Sản phẩm đã được thêm thành công!'}
+          message={toastSucess || 'Thêm thành công!'}
         />
       )}
 
@@ -447,7 +390,7 @@ export default function ProductList() {
           isVisible={!!toastError}
           variant={'error'}
           title={'Thất bại'}
-          message={toastError || 'Thêm sản phẩm thất bại!'}
+          message={toastError || 'Thêm thất bại!'}
         />
       )}
     </div>

@@ -88,7 +88,7 @@ function InputMultipleUpload({
         <h4 className="font-semibold text-gray-800 text-xs dark:text-white/90">
           {selectedFiles.length > 0
             ? `${selectedFiles.length} tập tin đã chọn`
-            : 'Nhấn để chọn tập tin'}
+            : 'Chọn tập tin (có thể thêm nhiều)'}
         </h4>
       </div>
     </div>

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Table,
   TableBody,
@@ -22,22 +22,21 @@ import { uploadFileApi } from '../../../api/modules/upload';
 import Alert from '../../../components/ui/alert/Alert';
 import BasePagination from '../../../components/pagination/BasePagination';
 import { formatDate } from '../../../common/utils/dateUtils';
-import { IBaseResponse } from '../../../common/interfaces/reponse.interface';
-
-export interface ICategory extends IBaseResponse {
-  _id: string;
-  name: string;
-  icon: string;
-}
+import { appSettings } from '../../../api/axios/config';
+import { ICategory } from '../models/category.interface';
 
 export default function CategoryList() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalDocs, setTotalDocs] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+
   const [categories, setCategories] = useState<ICategory[]>([]);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const { isOpen, openModal, closeModal } = useModal();
-  const [toast, setToast] = useState('');
+
+  const [toastSucess, setToastSuccess] = useState('');
+  const [toastError, setToastError] = useState('');
+
   const [newCategory, setNewCategory] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
@@ -56,7 +55,7 @@ export default function CategoryList() {
   const getCategory = async () => {
     const categoryReponse = await getCategoryApi(currentPage);
 
-    const { page, limit, totalDocs, totalPages, docs } = categoryReponse;
+    const { page, totalDocs, totalPages, docs } = categoryReponse;
 
     setCurrentPage(page);
     setTotalDocs(totalDocs);
@@ -71,52 +70,62 @@ export default function CategoryList() {
   const onAddCategory = async () => {
     try {
       if (!newCategory || !selectedFile) {
-        setToast('Vui lòng nhập tên danh mục và chọn ảnh!');
-
+        setToastError('Vui lòng nhập tên danh mục và chọn ảnh!');
         return;
       }
 
       const uploadResponse = await uploadFileApi(selectedFile);
-      const icon = uploadResponse?.data.url;
+      const iconUrl = uploadResponse?.url;
 
-      if (!icon) {
-        setToast('Lỗi khi upload ảnh!');
+      if (!iconUrl) {
+        setToastError('Lỗi khi tải ảnh lên, vui lòng thử lại!');
         return;
       }
 
-      await createCategoryApi(newCategory, icon);
+      await createCategoryApi(
+        newCategory,
+        `${appSettings.BASE_API_URL}${iconUrl}`
+      );
 
-      getCategory();
-      setToast('Thêm danh mục thành công!');
+      setToastSuccess('Thêm danh mục thành công!');
+      await getCategory();
       closeModal();
     } catch (error) {
       console.error('Create category error:', error);
-    } finally {
-      closeModal();
+      setToastError('Thêm danh mục thất bại, vui lòng thử lại!');
     }
   };
 
   const onDeleteCategory = async (categoryId: string) => {
     try {
+      const confirmDelete = window.confirm(
+        'Bạn có chắc chắn muốn xóa danh mục này?'
+      );
+      if (!confirmDelete) return;
+
       await deleteCategoryApi(categoryId);
-      getCategory();
-      setToast('Xóa thành công');
+
+      setToastSuccess('Xóa danh mục thành công!');
+      await getCategory();
+      setToastSuccess('');
+      setToastError('');
+      closeModal();
     } catch (error) {
-      console.error('Delte category error:', error);
-    } finally {
-      setToast('');
+      console.error('Delete category error:', error);
+      setToastError('Xóa danh mục thất bại, vui lòng thử lại!');
     }
   };
 
   useEffect(() => {
-    if (toast) {
+    if (toastSucess || toastError) {
       const timer = setTimeout(() => {
-        setToast('');
+        setToastSuccess('');
+        setToastError('');
       }, 3000);
 
       return () => clearTimeout(timer);
     }
-  }, [toast]);
+  }, [toastSucess, toastError]);
 
   return (
     <div>
@@ -285,12 +294,21 @@ export default function CategoryList() {
         </div>
       </Modal>
 
-      {toast && (
+      {toastSucess && (
         <Alert
-          isVisible={!!toast}
-          variant={toast ? 'error' : 'success'}
-          title={toast ? 'Thông tin danh mục không chính xác' : 'Thành công'}
-          message={toast || 'Danh mục đã được thêm thành công!'}
+          isVisible={!!toastSucess}
+          variant={'success'}
+          title={'Thành công'}
+          message={toastSucess || 'Thêm thành công!'}
+        />
+      )}
+
+      {toastError && (
+        <Alert
+          isVisible={!!toastError}
+          variant={'error'}
+          title={'Thất bại'}
+          message={toastError || 'Thêm thất bại!'}
         />
       )}
     </div>

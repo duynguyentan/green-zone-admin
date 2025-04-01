@@ -19,12 +19,14 @@ const DatePicker: React.FC<DatePickerProps> = ({
   const [selectedDate, setSelectedDate] = useState(value);
 
   const handleDateChange = (selectedDates: Date[]) => {
-    const formattedDate = selectedDates[0]?.toISOString().split('T')[0] || '';
+    const formattedDate = selectedDates[0]?.toLocaleDateString('en-CA') || '';
+    
     setSelectedDate(formattedDate);
     onChange(formattedDate);
   };
 
-  const handleClearDate = () => {
+  const handleClearDate = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Chặn sự kiện click mở Flatpickr
     setSelectedDate('');
     onChange('');
   };
@@ -41,16 +43,18 @@ const DatePicker: React.FC<DatePickerProps> = ({
           dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 
           focus:border-success-300 focus:ring-success-500/20 dark:border-gray-700 dark:focus:border-success-800"
       />
-      <span className="absolute text-gray-500 -translate-y-1/2 pointer-events-none right-3 top-1/2 dark:text-gray-400">
-        <CalenderIcon className="size-6" />
-      </span>
-      {selectedDate && (
+
+      {selectedDate ? (
         <button
           onClick={handleClearDate}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-red-500"
+          className="absolute text-gray-500 -translate-y-1/2 right-3 top-1/2 dark:text-gray-400"
         >
-          <XIcon />
+          <XIcon className="size-6" />
         </button>
+      ) : (
+        <span className="absolute text-gray-500 -translate-y-1/2 pointer-events-none right-3 top-1/2 dark:text-gray-400">
+          <CalenderIcon className="size-6" />
+        </span>
       )}
     </div>
   );

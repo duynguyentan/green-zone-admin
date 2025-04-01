@@ -15,3 +15,27 @@ export interface IWard {
   districtCode: number;
   wards: IProvince[];
 }
+
+export interface ISearchAddress {
+  predictions: {
+    place_id: string;
+    description: string;
+    compound?: {
+      commune: string;
+      district: string;
+      province: string;
+    };
+  }[];
+  status: string;
+}
+
+export interface ILatLong {
+  result: {
+    geometry: {
+      location: {
+        lat: string;
+        lng: string;
+      };
+    };
+  };
+}

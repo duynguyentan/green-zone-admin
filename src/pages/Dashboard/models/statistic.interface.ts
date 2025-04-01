@@ -9,14 +9,27 @@ export interface ITotal {
   };
 }
 
-export interface IOrderByProvince {
-  orderCount: number;
-  percentage: number;
-  province: string;
-}
+export type OrderStatsByStore = {
+  _id: string;
+  storeName: string;
+  storeAddress: string;
+  totalOrders: number;
+  totalRevenue: number;
+  percentage?: number;
+};
 
 export interface ISummary {
   totals: ITotal;
-  monthlySales: number[];
-  customerByProvince: IOrderByProvince[];
+  orderStatsByStore: OrderStatsByStore[];
 }
+
+export type MonthlyOrderData = {
+  month: number;
+  totalOrders: number;
+  totalRevenue: number;
+};
+
+export type OrderCountResponse = {
+  year: number;
+  monthlyData: MonthlyOrderData[];
+};

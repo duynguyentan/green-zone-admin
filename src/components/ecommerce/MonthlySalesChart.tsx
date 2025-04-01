@@ -1,11 +1,29 @@
 import Chart from 'react-apexcharts';
 import { ApexOptions } from 'apexcharts';
+import { useEffect, useState } from 'react';
+import { getOrderCountApi } from '../../api/modules';
+import { MonthlyOrderData } from '../../pages/Dashboard/models/statistic.interface';
+import { toVNDFormat } from '../../common/utils/money';
 
-export default function MonthlySalesChart({
-  monthlySales,
-}: {
-  monthlySales: number[];
-}) {
+export default function MonthlySalesChart() {
+  const currentYear = new Date().getFullYear();
+  const [yearSelected, setYearSelected] = useState(currentYear);
+  const [orderCount, setOrderCount] = useState<MonthlyOrderData[]>([]);
+
+  useEffect(() => {
+    getOrderCount();
+  }, [yearSelected]);
+
+  const getOrderCount = async () => {
+    const orderCount = await getOrderCountApi(yearSelected);
+
+    setOrderCount(orderCount.monthlyData);
+  };
+
+  const handleYearChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setYearSelected(Number(e.target.value));
+  };
+
   const options: ApexOptions = {
     colors: ['#12b76a'],
     chart: {
@@ -34,18 +52,18 @@ export default function MonthlySalesChart({
     },
     xaxis: {
       categories: [
-        'Th1',
-        'Th2',
-        'Th3',
-        'Th4',
-        'Th5',
-        'Th6',
-        'Th7',
-        'Th8',
-        'Th9',
-        'Th10',
-        'Th11',
-        'Th12',
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec',
       ],
       axisBorder: {
         show: false,
@@ -61,6 +79,9 @@ export default function MonthlySalesChart({
       fontFamily: 'Outfit',
     },
     yaxis: {
+      labels: {
+        formatter: (value: number) => toVNDFormat(value), // Định dạng tiền tệ
+      },
       title: {
         text: undefined,
       },
@@ -81,26 +102,40 @@ export default function MonthlySalesChart({
         show: false,
       },
       y: {
-        formatter: (val: number) => `${val}`,
+        formatter: (val: number) => `${toVNDFormat(val)}`,
       },
     },
   };
   const series = [
     {
       name: 'Bán',
-      data: monthlySales,
+      data: orderCount.map(({ totalRevenue }) => totalRevenue),
     },
   ];
 
   return (
     <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white px-5 pt-5 dark:border-gray-800 dark:bg-white/[0.03] sm:px-6 sm:pt-6">
-      <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">
-        Doanh số hàng tháng (2025)
-      </h3>
-
+      <div className="w-full flex justify-between items-center">
+        <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">
+          Doanh số hàng tháng theo năm
+        </h3>
+        <select
+          value={yearSelected}
+          onChange={handleYearChange}
+          className="px-3 py-2 border border-gray-300 rounded-lg text-gray-700 dark:text-white dark:border-gray-600 dark:bg-gray-800 focus:ring-2 focus:ring-green-500 focus:outline-none"
+        >
+          {Array.from({ length: 5 }, (_, i) => currentYear - i).map((year) => (
+            <option key={year} value={year}>
+              {year}
+            </option>
+          ))}
+        </select>
+      </div>
       <div className="max-w-full overflow-x-auto custom-scrollbar">
         <div className="-ml-5 min-w-[650px] xl:min-w-full pl-2">
-          <Chart options={options} series={series} type="bar" height={180} />
+          {orderCount?.length && (
+            <Chart options={options} series={series} type="bar" height={180} />
+          )}
         </div>
       </div>
     </div>

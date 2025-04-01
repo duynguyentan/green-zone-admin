@@ -1,3 +1,2 @@
-export { default as ProductPage } from './ProductPage';
-export { default as ProductList } from "./components/ProductList";
-
+export { default as EmployeePage } from './EmpoyeePage';
+export { default as EmployeeList } from './components/EmployeeList';

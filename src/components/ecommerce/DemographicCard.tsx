@@ -1,34 +1,34 @@
-import { useState } from 'react';
-import { Dropdown } from '../ui/dropdown/Dropdown';
-import { DropdownItem } from '../ui/dropdown/DropdownItem';
-import { MoreDotIcon } from '../../icons';
-import VietnamMap from './VietNamMap';
-import { IOrderByProvince } from '../../pages/Dashboard/models/statistic.interface';
+import { OrderStatsByStore } from '../../pages/Dashboard/models/statistic.interface';
+import { toVNDFormat } from '../../common/utils/money';
 
 export default function DemographicCard({
-  orderByProvince,
+  orderStatsByStore,
 }: {
-  orderByProvince: IOrderByProvince[];
+  orderStatsByStore: OrderStatsByStore[];
 }) {
-  const [isOpen, setIsOpen] = useState(false);
+  const totalOrdersAllStores = orderStatsByStore.reduce(
+    (sum, store) => sum + store.totalOrders,
+    0
+  );
 
-  function toggleDropdown() {
-    setIsOpen(!isOpen);
-  }
+  const updatedStats = orderStatsByStore.map((store) => ({
+    ...store,
+    percentage:
+      totalOrdersAllStores > 0
+        ? ((store.totalOrders / totalOrdersAllStores) * 100).toFixed(2) + '%'
+        : '0%',
+  }));
 
-  function closeDropdown() {
-    setIsOpen(false);
-  }
   return (
     <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] sm:p-6">
       <div className="flex justify-between">
         <div>
-          <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">
+          <h3 className="mb-2 text-lg font-semibold text-gray-800 dark:text-white/90">
             Phân khúc đơn hàng
           </h3>
-          <p className="mt-1 text-gray-500 text-theme-sm dark:text-gray-400">
+          {/* <p className="mt-1 text-gray-500 text-theme-sm dark:text-gray-400">
             Lượng đơn hàng trên toàn quốc
-          </p>
+          </p> */}
         </div>
         {/* <div className="relative inline-block">
           <button className="dropdown-toggle" onClick={toggleDropdown}>
@@ -54,23 +54,23 @@ export default function DemographicCard({
           </Dropdown>
         </div> */}
       </div>
-      <div className="px-4 py-6 my-6 overflow-hidden border border-gary-200 rounded-2xl dark:border-gray-800 sm:px-6">
-        <VietnamMap orderByProvince={orderByProvince} />
-      </div>
+      {/* <div className="px-4 py-6 my-6 overflow-hidden border border-gary-200 rounded-2xl dark:border-gray-800 sm:px-6">
+        <VietnamMap  />
+      </div> */}
 
       <div className="space-y-5">
-        {orderByProvince.map((item) => (
-          <div
-            key={item.province}
-            className="flex items-center justify-between"
-          >
+        {updatedStats.map((item) => (
+          <div key={item._id} className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div>
                 <p className="font-semibold text-gray-800 text-theme-sm dark:text-white/90">
-                  {item.province}
+                  {item.storeName}
                 </p>
-                <span className="block text-gray-500 text-theme-xs dark:text-gray-400">
-                  {item.orderCount} Đơn hàng
+                <span className="block text-green-500 font-semibold text-theme-xs dark:text-green-400">
+                  {item.totalOrders} đơn hàng
+                </span>
+                <span className="block text-orange-500 font-semibold text-theme-xs dark:text-yellow-400">
+                  {toVNDFormat(item.totalRevenue)} tổng doanh thu
                 </span>
               </div>
             </div>
@@ -79,11 +79,11 @@ export default function DemographicCard({
               <div className="relative block h-2 w-full max-w-[100px] rounded-sm bg-gray-200 dark:bg-gray-800">
                 <div
                   className="absolute left-0 top-0 flex h-full items-center justify-center rounded-sm bg-success-500 text-xs font-medium text-white"
-                  style={{ width: `${item.percentage}%` }}
+                  style={{ width: parseFloat(item.percentage) }}
                 ></div>
               </div>
               <p className="font-medium text-gray-800 text-theme-sm dark:text-white/90">
-                {item.percentage}%
+                {item.percentage}
               </p>
             </div>
           </div>

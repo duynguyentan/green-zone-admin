@@ -1,13 +1,8 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { ComposableMap, Geographies, Geography } from 'react-simple-maps';
 import vietnamMap from '../../common/maps/vietnam-geo.json';
-import { IOrderByProvince } from '../../pages/Dashboard/models/statistic.interface';
 
-export default function VietnamMap({
-  orderByProvince,
-}: {
-  orderByProvince: IOrderByProvince[];
-}) {
+export default function VietnamMap() {
   const [tooltip, setTooltip] = useState<{
     name: string;
     orderCount: number;
@@ -28,21 +23,21 @@ export default function VietnamMap({
         <Geographies geography={vietnamMap}>
           {({ geographies }) =>
             geographies.map((geo) => {
-              const provinceName = geo.properties.name;
-              const provinceData = orderByProvince.find(
-                (p) => p.province === provinceName
-              );
+              // const provinceName = geo.properties.name;
+              // const provinceData = orderByProvince.find(
+              //   (p) => p.province === provinceName
+              // );
 
               return (
                 <Geography
                   key={geo.rsmKey}
                   geography={geo}
-                  onMouseEnter={() =>
-                    setTooltip({
-                      name: provinceName,
-                      orderCount: provinceData ? provinceData.orderCount : 0,
-                    })
-                  }
+                  // onMouseEnter={() =>
+                  //   setTooltip({
+                  //     name: provinceName,
+                  //     orderCount: provinceData ? provinceData.orderCount : 0,
+                  //   })
+                  // }
                   onMouseLeave={() => setTooltip(null)}
                   style={{
                     default: { fill: '#D0D5DD', stroke: '#FFF' },

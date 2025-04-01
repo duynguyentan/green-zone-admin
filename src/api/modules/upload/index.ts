@@ -23,7 +23,7 @@ export const uploadMultipleFilesApi = (
   files.forEach((file) => formData.append('files', file));
 
   return axios.post(
-    `${appSettings.BASE_API_URL}/file/images/upload`,
+    `${appSettings.BASE_API_URL}/file/images/multiple-upload`,
     formData,
     {
       headers: {

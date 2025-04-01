@@ -2,7 +2,6 @@ import { useCallback } from 'react';
 import { UploadIcon } from '../../../icons';
 import { useDropzone } from 'react-dropzone';
 
-type DropzoneSize = 'sm' | 'md';
 interface DropzoneProps {}
 
 const DropzoneComponent: React.FC<DropzoneProps> = () => {

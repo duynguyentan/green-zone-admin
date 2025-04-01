@@ -115,7 +115,7 @@ export default function RecentOrders() {
           </TableHeader>
 
           {/* Table Body */}
-          {orders.length && (
+          {orders.length > 0 && (
             <TableBody className="divide-y divide-gray-100 dark:divide-gray-800">
               {orders.map((order) => (
                 <TableRow key={order._id} className="">

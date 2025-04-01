@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { redirect } from 'react-router';
 import { Link, useNavigate } from 'react-router';
 import { ChevronLeftIcon, EyeCloseIcon, EyeIcon } from '../../icons';
 import Label from '../form/Label';
@@ -31,8 +30,8 @@ export default function SignInForm() {
     setIsVisible(false);
 
     try {
-      const { data } = await signInApi(phoneNumber, password);
-      StorageService.setAccessToken(data.token.accessToken.token);
+      const loginRes = await signInApi(phoneNumber, password);
+      StorageService.setAccessToken(loginRes.token.accessToken.token);
 
       navigate('/', { replace: true });
     } catch (error) {

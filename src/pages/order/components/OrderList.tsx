@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Table,
   TableBody,
@@ -6,7 +6,6 @@ import {
   TableHeader,
   TableRow,
 } from '../../../components/ui/table';
-import Alert from '../../../components/ui/alert/Alert';
 import BasePagination from '../../../components/pagination/BasePagination';
 import { formatDate } from '../../../common/utils/dateUtils';
 import { IOrder } from '../models/order.interface';
@@ -21,6 +20,7 @@ import { getStoreApi, getOrderApi } from '../../../api/modules';
 import { IStore } from '../../store/models/store.interface';
 import SearchInput from '../../../components/form/input/SearchInput';
 import OrderDetail from './OrderDetail';
+import { extractAddress } from '../../../common/utils/truncateText';
 
 interface OrderListProps {
   setOrderCount: (count: number) => void;
@@ -61,7 +61,7 @@ const OrderList: React.FC<OrderListProps> = ({ setOrderCount }) => {
 
   const getStore = async () => {
     const storeResponse = await getStoreApi(1);
-    const { page, limit, totalDocs, totalPages, docs } = storeResponse;
+    const { docs } = storeResponse;
 
     setStores(docs);
   };
@@ -73,7 +73,7 @@ const OrderList: React.FC<OrderListProps> = ({ setOrderCount }) => {
       statusSelected,
       search
     );
-    const { page, limit, totalDocs, totalPages, docs } = orderResponse;
+    const { page, totalDocs, totalPages, docs } = orderResponse;
 
     setCurrentPage(page);
     setTotalDocs(totalDocs);
@@ -149,20 +149,6 @@ const OrderList: React.FC<OrderListProps> = ({ setOrderCount }) => {
                   isHeader
                   className="px-4 py-4 font-semibold text-gray-500 text-center text-theme-xs dark:text-gray-400"
                 >
-                  Trạng thái
-                </TableCell>
-
-                <TableCell
-                  isHeader
-                  className="px-4 py-4 font-semibold text-gray-500 text-center text-theme-xs dark:text-gray-400"
-                >
-                  Tổng đơn hàng
-                </TableCell>
-
-                <TableCell
-                  isHeader
-                  className="px-4 py-4 font-semibold text-gray-500 text-center text-theme-xs dark:text-gray-400"
-                >
                   Khách hàng
                 </TableCell>
 
@@ -171,6 +157,20 @@ const OrderList: React.FC<OrderListProps> = ({ setOrderCount }) => {
                   className="px-4 py-4 font-semibold text-gray-500 text-center text-theme-xs dark:text-gray-400"
                 >
                   Cửa hàng
+                </TableCell>
+
+                <TableCell
+                  isHeader
+                  className="px-4 py-4 font-semibold text-gray-500 text-center text-theme-xs dark:text-gray-400"
+                >
+                  Trạng thái
+                </TableCell>
+
+                <TableCell
+                  isHeader
+                  className="px-4 py-4 font-semibold text-gray-500 text-center text-theme-xs dark:text-gray-400"
+                >
+                  Tổng đơn hàng
                 </TableCell>
 
                 <TableCell
@@ -194,6 +194,25 @@ const OrderList: React.FC<OrderListProps> = ({ setOrderCount }) => {
                     #{order._id.slice(0, 2)}...{order._id.slice(-4)}
                   </TableCell>
 
+                  <TableCell className="px-3 py-3 text-gray-700 text-center text-theme-sm dark:text-gray-400">
+                    <span className="whitespace-nowrap font-medium">
+                      {order.deliveryMethod === 'delivery'
+                        ? `${order?.consigneeName} - ${order?.consigneePhone}`
+                        : order?.owner?.phoneNumber
+                        ? `${order?.owner?.firstName} ${order?.owner?.lastName} - ${order?.owner?.phoneNumber}`
+                        : 'Khách vãng lai'}
+                    </span>
+                    <br />
+
+                    <span className="text-theme-xs">
+                      {extractAddress(order?.shippingAddress) || ''}
+                    </span>
+                  </TableCell>
+
+                  <TableCell className="px-3 py-3 text-gray-700 text-center text-theme-sm dark:text-gray-400">
+                    <span className="font-sm">{order.store.name}</span>
+                  </TableCell>
+
                   <TableCell className="px-3 py-3 text-center text-theme-sm dark:text-gray-400">
                     <Badge size="sm" color={getOrderStatusColor(order.status)}>
                       {OrderStatusLabel[order.status]}
@@ -205,32 +224,7 @@ const OrderList: React.FC<OrderListProps> = ({ setOrderCount }) => {
                   </TableCell>
 
                   <TableCell className="px-3 py-3 text-gray-700 text-center text-theme-sm dark:text-gray-400">
-                    <span className="whitespace-nowrap font-medium">
-                      {order.deliveryMethod === 'delivery'
-                        ? order?.shippingAddress?.consigneeName
-                        : order.owner.phoneNumber
-                        ? `${order.owner.firstName} ${order.owner.lastName}`
-                        : 'Khách vãng lai'}
-                    </span>
-                    <br />
-                    <span className="text-theme-xs">
-                      {order.deliveryMethod === 'delivery'
-                        ? order?.shippingAddress?.consigneePhone
-                        : order.owner.phoneNumber}
-                    </span>
-                  </TableCell>
-
-                  <TableCell className="px-3 py-3 text-gray-700 text-center text-theme-sm dark:text-gray-400">
-                    <span className="font-medium">{order.store.name}</span>
-                    <br />
-                    <span className="text-theme-xs">
-                      {order.store.specificAddress}, {order.store.ward},{' '}
-                      {order.store.district}, {order.store.province}
-                    </span>
-                  </TableCell>
-
-                  <TableCell className="px-3 py-3 text-gray-700 text-center text-theme-sm dark:text-gray-400">
-                    {formatDate(order.updatedAt)}
+                    {formatDate(order.createdAt)}
                   </TableCell>
                 </TableRow>
               ))}

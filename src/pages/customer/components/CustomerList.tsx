@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Table,
   TableBody,
@@ -8,7 +8,7 @@ import {
 } from '../../../components/ui/table';
 import { getCustomerApi } from '../../../api/modules';
 import { useModal } from '../../../hooks/useModal';
-import { MoreDotIcon, PlusIcon } from '../../../icons';
+import { MoreDotIcon } from '../../../icons';
 import { Dropdown } from '../../../components/ui/dropdown/Dropdown';
 import { DropdownItem } from '../../../components/ui/dropdown/DropdownItem';
 import { Modal } from '../../../components/ui/modal';
@@ -39,7 +39,7 @@ export default function CustomerList() {
   const getCustomer = async () => {
     const customerReponse = await getCustomerApi(currentPage);
 
-    const { page, limit, totalDocs, totalPages, docs } = customerReponse;
+    const { page, totalDocs, totalPages, docs } = customerReponse;
 
     setCurrentPage(page);
     setCustomers(docs);
