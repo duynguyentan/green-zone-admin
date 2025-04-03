@@ -1,10 +1,12 @@
 export const apps = [
   {
-    name: 'green-zone-admin',
-    script: 'npm', // Sử dụng npm để chạy lệnh build
-    args: 'run build && serve -s dist -l 4000', // Build và serve static files
+    name: 'green-zone-admin-build',
+    script: 'npm',
+    args: 'run build', // Chạy build trước
     env: {
       NODE_ENV: 'production',
     },
+    // Sau khi build xong, sẽ tự động chạy serve
+    post_deploy: 'serve -s dist -l 4000',
   },
 ];
