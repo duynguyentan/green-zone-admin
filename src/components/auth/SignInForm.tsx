@@ -31,11 +31,16 @@ export default function SignInForm() {
 
     try {
       const loginRes = await signInApi(phoneNumber, password);
+      if (loginRes.user.roles[0].name !== 'admin') {
+        setError('Tài khoản không có quyền truy cập');
+        setIsVisible(true);
+        return;
+      }
+
       StorageService.setAccessToken(loginRes.token.accessToken.token);
 
       navigate('/', { replace: true });
     } catch (error) {
-      console.error('Login error: ', error);
       setError('Số điện thoại hoặc mật khẩu không đúng');
       setIsVisible(true);
     }
