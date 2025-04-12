@@ -8,9 +8,6 @@ import {
 } from '../../../components/ui/table';
 import { getCustomerApi } from '../../../api/modules';
 import { useModal } from '../../../hooks/useModal';
-import { MoreDotIcon } from '../../../icons';
-import { Dropdown } from '../../../components/ui/dropdown/Dropdown';
-import { DropdownItem } from '../../../components/ui/dropdown/DropdownItem';
 import { Modal } from '../../../components/ui/modal';
 import Alert from '../../../components/ui/alert/Alert';
 import { formatDate } from '../../../common/utils/dateUtils';
@@ -23,9 +20,8 @@ export default function CustomerList() {
   const [totalDocs, setTotalDocs] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [customers, setCustomers] = useState<ICurrentUser[]>([]);
-  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
-  const { isOpen, openModal, closeModal } = useModal();
+  const { isOpen, closeModal } = useModal();
 
   const [toast, setToast] = useState('');
   const [detailSelected, setDetailSelected] = useState<ICurrentUser | null>(
@@ -45,10 +41,6 @@ export default function CustomerList() {
     setCustomers(docs);
     setTotalDocs(totalDocs);
     setTotalPages(totalPages);
-  };
-
-  const closeDropdown = () => {
-    setOpenMenuId(null);
   };
 
   useEffect(() => {
