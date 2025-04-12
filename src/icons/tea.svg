@@ -1,0 +1,25 @@
+<svg
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <!-- Hình ly trà sữa -->
+  <path d="M8 3H16L15 15H9L8 3Z" /> 
+  
+  <!-- Ống hút -->
+  <path d="M10 3L11 1H13L14 3" />
+  
+  <!-- Nắp ly -->
+  <path d="M7 5H17" />
+  
+  <!-- Trân châu (các chấm bên trong) -->
+  <circle cx="10" cy="17" r="1" />
+  <circle cx="14" cy="17" r="1" />
+  <circle cx="12" cy="19" r="1" />
+</svg>

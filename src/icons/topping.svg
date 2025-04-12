@@ -1,0 +1,19 @@
+<svg
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <!-- Hình ly trà sữa hoặc cốc đựng topping -->
+  <path d="M7 3H17L19 20H5L7 3Z" />
+  
+  <!-- Các viên tròn đại diện cho topping -->
+  <circle cx="8.5" cy="10" r="1.5" />
+  <circle cx="12" cy="12" r="1.5" />
+  <circle cx="15.5" cy="8.5" r="1.5" />
+</svg>
