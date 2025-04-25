@@ -23,10 +23,7 @@ export interface IOrder extends IBaseResponse {
   creator?: string | null;
   store: {
     name: string;
-    specificAddress: string;
-    ward: string;
-    district: string;
-    province: string;
+    address: string;
   };
   voucher?: string | null;
   orderItems: IOrderItem[];

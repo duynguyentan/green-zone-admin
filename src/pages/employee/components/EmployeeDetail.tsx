@@ -92,9 +92,7 @@ const StoreDetail: React.FC<StoreDetailProps> = ({
               </h6>
 
               <span className="text-sm font-medium text-gray-800 dark:text-white/90">
-                {employee.workingStore.specificAddress},{' '}
-                {employee.workingStore.ward} - {employee.workingStore.district}{' '}
-                - {employee.workingStore.province}
+                {employee.workingStore.address}
               </span>
             </div>
 

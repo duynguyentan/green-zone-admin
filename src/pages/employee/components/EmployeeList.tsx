@@ -325,10 +325,7 @@ export default function EmployeeList() {
                   </TableCell>
                   <TableCell className="px-4 py-3 text-gray-600 text-center text-theme-sm dark:text-gray-400">
                     {employee.workingStore.name} <br />
-                    {employee.workingStore.specificAddress},{' '}
-                    {employee.workingStore.ward} -{' '}
-                    {employee.workingStore.district} -{' '}
-                    {employee.workingStore.province}
+                    {employee.workingStore.address}
                   </TableCell>
                   <TableCell className="px-4 py-3 text-gray-600 text-center text-theme-sm dark:text-gray-400">
                     {formatDate(employee.createdAt)}

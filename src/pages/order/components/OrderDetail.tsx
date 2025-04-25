@@ -88,9 +88,7 @@ const OrderDetail: React.FC<OrderDetailProps> = ({
                     {orderDetail.store.phoneNumber}
                   </span>
                   <span className="block text-gray-600 text-theme-xs dark:text-gray-400">
-                    {orderDetail.store.specificAddress},{' '}
-                    {orderDetail.store.ward} - {orderDetail.store.district} -{' '}
-                    {orderDetail.store.province}
+                    {orderDetail.store.address}
                   </span>
                 </div>
               </div>

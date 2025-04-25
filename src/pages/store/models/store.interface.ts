@@ -6,10 +6,7 @@ export interface IStore extends IBaseResponse {
   images: string[];
   openTime: string;
   closeTime: string;
-  specificAddress: string;
-  ward: string;
-  district: string;
-  province: string;
+  address: string;
   latitude: string;
   longitude: string;
 }

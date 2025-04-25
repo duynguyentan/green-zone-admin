@@ -222,7 +222,11 @@ export default function StoreList() {
   return (
     <div>
       <Button
-        onClick={openModalAdd}
+        onClick={() => {
+          setFormData({ ...defaultFormData });
+
+          openModalAdd();
+        }}
         className="mb-4"
         size="sm"
         variant="primary"
@@ -292,9 +296,7 @@ export default function StoreList() {
                     {store.phoneNumber}
                   </TableCell>
                   <TableCell className="px-4 py-3 text-gray-600 text-center text-theme-sm dark:text-gray-400">
-                    {store.specificAddress}
-                    <br />
-                    {store.ward} - {store.district} - {store.province}
+                    {store.address}
                   </TableCell>
                   <TableCell className="px-4 py-3 text-gray-600 text-center text-theme-sm dark:text-gray-400">
                     {formatDate(store.createdAt)}
@@ -323,7 +325,7 @@ export default function StoreList() {
                               phoneNumber: store.phoneNumber,
                               selectedFiles: [],
                               address: {
-                                description: store.specificAddress,
+                                description: store.address,
                                 place_id: '',
                               },
                               openTime: store.openTime,

@@ -29,10 +29,7 @@ export interface IOrderItem {
 interface IStore {
   name: string;
   phoneNumber: string;
-  district: string;
-  province: string;
-  specificAddress: string;
-  ward: string;
+  address: string;
   latitude: string;
   longitude: string;
   images: string[];
