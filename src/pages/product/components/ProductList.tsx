@@ -8,7 +8,7 @@ import {
 } from '../../../components/ui/table';
 import { useModal } from '../../../hooks/useModal';
 import Button from '../../../components/ui/button/Button';
-import { MoreDotIcon, PlusIcon } from '../../../icons';
+import { PlusIcon } from '../../../icons';
 import { Dropdown } from '../../../components/ui/dropdown/Dropdown';
 import { DropdownItem } from '../../../components/ui/dropdown/DropdownItem';
 import { Modal } from '../../../components/ui/modal';
@@ -21,7 +21,6 @@ import {
   addToppingApi,
   createProductApi,
   createVariantApi,
-  deleteProductApi,
   getAllProductApi,
   getCategoryApi,
   getToppingApi,
@@ -46,7 +45,25 @@ export default function ProductList() {
   const [toppings, setToppings] = useState<ITopping[]>([]);
 
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
-  const { isOpen, openModal, closeModal } = useModal();
+
+  const {
+    isOpen: isModalAddOpen,
+    openModal: openModalAdd,
+    closeModal: closeModalAdd,
+  } = useModal();
+
+  const {
+    isOpen: isModalEditOpen,
+    openModal: openModalEdit,
+    closeModal: closeModalEdit,
+  } = useModal();
+
+  // const {
+  //   isOpen: isModalDeleteOpen,
+  //   openModal: openModalDelete,
+  //   closeModal: closeModalDelete,
+  // } = useModal();
+
   const [toastSucess, setToastSuccess] = useState('');
   const [toastError, setToastError] = useState('');
 
@@ -97,7 +114,7 @@ export default function ProductList() {
     setTotalPages(totalPages);
   };
 
-  const onAddproduct = async () => {
+  const onAddProduct = async () => {
     try {
       if (!newProductName || !selectedFile || !categoryIds.length) {
         setToastError('Thông tin sản phẩm chưa đầy đủ');
@@ -132,36 +149,19 @@ export default function ProductList() {
 
       setToastSuccess('Thêm sản phẩm thành công!');
       await getProduct();
-      closeModal();
+      closeModalAdd();
     } catch (error) {
       console.error('Create product error:', error);
       setToastError('Đã có lỗi xảy ra, vui lòng thử lại.');
     }
   };
 
-  const toggleDropdown = (id: string) => {
-    setOpenMenuId((prev) => (prev === id ? null : id));
-  };
+  // const toggleDropdown = (id: string) => {
+  //   setOpenMenuId((prev) => (prev === id ? null : id));
+  // };
 
   const closeDropdown = () => {
     setOpenMenuId(null);
-  };
-
-  const onDeleteProduct = async (productId: string) => {
-    try {
-      const confirmDelete = window.confirm(
-        'Bạn có chắc chắn muốn xóa sản phẩm này?'
-      );
-      if (!confirmDelete) return;
-
-      await deleteProductApi(productId);
-
-      setToastSuccess('Xóa sản phẩm thành công!');
-      await getProduct();
-    } catch (error) {
-      console.error('Delete product error:', error);
-      setToastError('Xóa sản phẩm thất bại, vui lòng thử lại!');
-    }
   };
 
   useEffect(() => {
@@ -178,7 +178,7 @@ export default function ProductList() {
   return (
     <div>
       <Button
-        onClick={openModal}
+        onClick={openModalAdd}
         className="mb-4"
         size="sm"
         variant="primary"
@@ -282,7 +282,7 @@ export default function ProductList() {
 
                   <TableCell className="px-4 py-3 text-gray-700 text-center text-theme-sm dark:text-gray-400">
                     <div className="relative inline-block">
-                      <button
+                      {/* <button
                         className="dropdown-toggle"
                         onClick={(event) => {
                           event.stopPropagation();
@@ -290,7 +290,7 @@ export default function ProductList() {
                         }}
                       >
                         <MoreDotIcon className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 size-6" />
-                      </button>
+                      </button> */}
                       <Dropdown
                         isOpen={openMenuId === product._id}
                         onClose={closeDropdown}
@@ -299,22 +299,17 @@ export default function ProductList() {
                         <DropdownItem
                           onItemClick={(event) => {
                             event.stopPropagation();
+                            // setFormData({
+                            //   name: topping.name,
+                            //   extraPrice: topping.extraPrice,
+                            // });
+
+                            openModalEdit();
                             closeDropdown();
-                            // onDeleteProduct(product._id);
                           }}
                           className="flex w-full font-normal text-left text-gray-700 rounded-lg hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
                         >
                           Chỉnh sửa
-                        </DropdownItem>
-                        <DropdownItem
-                          onItemClick={(event) => {
-                            event.stopPropagation();
-                            onDeleteProduct(product._id);
-                            closeDropdown();
-                          }}
-                          className="flex w-full font-normal text-left text-gray-700 rounded-lg hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
-                        >
-                          Xóa
                         </DropdownItem>
                       </Dropdown>
                     </div>
@@ -336,8 +331,8 @@ export default function ProductList() {
       />
 
       <Modal
-        isOpen={isOpen}
-        onClose={closeModal}
+        isOpen={isModalAddOpen}
+        onClose={closeModalAdd}
         className="max-w-[500px] p-6 lg:p-10"
       >
         <div className="flex flex-col px-2 overflow-y-auto custom-scrollbar max-h-146">
@@ -410,18 +405,110 @@ export default function ProductList() {
           </div>
           <div className="flex items-center gap-3 mt-6 modal-footer sm:justify-end">
             <button
-              onClick={closeModal}
+              onClick={closeModalAdd}
               type="button"
               className="flex w-full justify-center rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] sm:w-auto"
             >
               Đóng
             </button>
             <button
-              onClick={onAddproduct}
+              onClick={onAddProduct}
               type="button"
               className="btn btn-success btn-update-event flex w-full justify-center rounded-lg bg-success-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-success-600 sm:w-auto"
             >
               Thêm mới
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={isModalEditOpen}
+        onClose={closeModalEdit}
+        className="max-w-[500px] p-6 lg:p-10"
+      >
+        <div className="flex flex-col px-2 overflow-y-auto custom-scrollbar max-h-146">
+          <h5 className="mb-2 font-semibold text-gray-800 modal-title text-theme-xl dark:text-white/90 lg:text-2xl">
+            Chỉnh sửa sản phẩm
+          </h5>
+          <div className="mt-4">
+            <div className="mb-2">
+              <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-400">
+                Tên sản phẩm
+              </label>
+              <input
+                type="input"
+                value={newProductName}
+                onChange={(e) => setNewProductName(e.target.value)}
+                className="dark:bg-dark-700 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-success-300 focus:outline-hidden focus:ring-3 focus:ring-success-500/10 dark:border-gray-700 dark:bg-gray-700 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-success-800"
+              />
+            </div>
+
+            <div className="mb-2">
+              <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-400">
+                Mô tả
+              </label>
+              <TextArea
+                rows={3}
+                value={productDesc}
+                error
+                onChange={(value) => setProductDesc(value)}
+              />
+            </div>
+
+            <div className="mb-2">
+              <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-400">
+                Ảnh
+              </label>
+              <InputUpload
+                selectedFile={selectedFile}
+                onFileSelect={setSelectedFile}
+              />
+            </div>
+
+            <div className="mb-2">
+              <MultiSelect
+                label="Danh mục"
+                options={categories.map((item) => ({
+                  text: item.name,
+                  value: item._id,
+                }))}
+                onChange={(values) => setCategoryIds(values)}
+              />
+            </div>
+
+            <div className="mb-2">
+              <MultiSelect
+                label="Topping"
+                options={toppings.map((item) => ({
+                  text: item.name,
+                  value: item._id,
+                }))}
+                onChange={(values) => setToppingIds(values)}
+              />
+            </div>
+
+            <div className="mb-2">
+              <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-400">
+                Size
+              </label>
+              <VariantInput setVariant={setVariants} />
+            </div>
+          </div>
+          <div className="flex items-center gap-3 mt-6 modal-footer sm:justify-end">
+            <button
+              onClick={closeModalEdit}
+              type="button"
+              className="flex w-full justify-center rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] sm:w-auto"
+            >
+              Đóng
+            </button>
+            <button
+              onClick={onAddProduct}
+              type="button"
+              className="btn btn-success btn-update-event flex w-full justify-center rounded-lg bg-success-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-success-600 sm:w-auto"
+            >
+              Chỉnh sửa
             </button>
           </div>
         </div>

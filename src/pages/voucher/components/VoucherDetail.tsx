@@ -63,7 +63,7 @@ const VoucherDetail: React.FC<VoucherDetailProps> = ({
               <span className="text-sm font-medium text-gray-800 dark:text-white/90">
                 {voucher.voucherType === 'global'
                   ? 'Toàn bộ hệ thống'
-                  : 'Điểm seed'}
+                  : 'Đổi điểm Seed'}
               </span>
             </div>
 
@@ -90,6 +90,21 @@ const VoucherDetail: React.FC<VoucherDetailProps> = ({
                   : 'Giá trị cố định'}
               </span>
             </div>
+
+            {voucher.requiredPoints ? (
+              <div className="flex items-center  text-gray-600 dark:text-gray-400 gap-2 mb-4">
+                <h6 className="flex items-center gap-1 text-xs leading-normal text-gray-500 dark:text-gray-400">
+                  <DollarLineIcon />
+                  Điểm cần quy đổi:
+                </h6>
+
+                <span className="text-sm font-medium text-gray-800 dark:text-white/90">
+                  {voucher.requiredPoints} seed
+                </span>
+              </div>
+            ) : (
+              ''
+            )}
 
             <div className="flex items-center  text-gray-600 dark:text-gray-400 gap-2 mb-4">
               <h6 className="flex items-center gap-1 text-xs leading-normal text-gray-500 dark:text-gray-400">

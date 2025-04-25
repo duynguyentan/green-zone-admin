@@ -6,7 +6,9 @@ export interface ICreateVoucher {
   description?: string;
   code: string;
   discountType: string;
-  discountValue: number;
+  voucherType: string;
+  requiredPoints?: number;
+  value: number;
   startDate: string;
   endDate: string;
 }
@@ -18,6 +20,7 @@ export interface IVoucher extends IBaseResponse {
   code: string;
   discountType: string;
   voucherType: string;
+  requiredPoints?: number;
   value: number;
   startDate: Date;
   endDate: Date;

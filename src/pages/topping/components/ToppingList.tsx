@@ -9,6 +9,7 @@ import {
 import {
   createToppingApi,
   deleteToppingApi,
+  editToppingApi,
   getToppingApi,
 } from '../../../api/modules';
 import { useModal } from '../../../hooks/useModal';
@@ -25,10 +26,32 @@ import { toVNDFormat } from '../../../common/utils/money';
 export default function ToppingList() {
   const [toppings, setToppings] = useState<ITopping[]>([]);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
-  const { isOpen, openModal, closeModal } = useModal();
-  const [toast, setToast] = useState('');
-  const [toppingName, setToppingName] = useState('');
-  const [toppingPrice, setToppingPrice] = useState('');
+
+  const {
+    isOpen: isModalAddOpen,
+    openModal: openModalAdd,
+    closeModal: closeModalAdd,
+  } = useModal();
+  const {
+    isOpen: isModalEditOpen,
+    openModal: openModalEdit,
+    closeModal: closeModalEdit,
+  } = useModal();
+
+  const {
+    isOpen: isModalDeleteOpen,
+    openModal: openModalDelete,
+    closeModal: closeModalDelete,
+  } = useModal();
+
+  const [toastSucess, setToastSuccess] = useState('');
+  const [toastError, setToastError] = useState('');
+
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [formData, setFormData] = useState({
+    name: '',
+    extraPrice: '',
+  });
 
   useEffect(() => {
     getTopping();
@@ -47,43 +70,79 @@ export default function ToppingList() {
     setToppings(toppingReponse);
   };
 
-  const onAddtopping = async () => {
+  const onAddTopping = async () => {
     try {
-      await createToppingApi(toppingName, toppingPrice);
+      const { name, extraPrice } = formData;
+
+      if (!name || !extraPrice) {
+        setToastError('Vui lòng nhập đầy đủ thông tin!');
+        return;
+      }
+
+      await createToppingApi(name, extraPrice);
 
       getTopping();
-      setToast('Thêm mới topping thành công!');
-      closeModal();
+      setToastSuccess('Thêm mới topping thành công!');
+      closeModalAdd();
     } catch (error) {
+      setToastError('Thêm topping thất bại, vui lòng thử lại!');
       console.error('Create topping error:', error);
     }
   };
 
-  const onDeleteTopping = async (toppingId: string) => {
+  const onEditTopping = async () => {
+    if (!selectedId) return;
+
     try {
-      await deleteToppingApi(toppingId);
+      const { name, extraPrice } = formData;
+
+      if (!name || !extraPrice) {
+        setToastError('Vui lòng nhập đầy đủ thông tin!');
+        return;
+      }
+
+      await editToppingApi(selectedId, name, extraPrice);
+
       getTopping();
-      setToast('Xóa thành công');
-      closeModal();
+      setToastSuccess('Chỉnh sửa topping thành công!');
+      closeModalEdit();
+      setSelectedId(null);
     } catch (error) {
-      console.error('Delte topping error:', error);
+      setToastError('Chỉnh sửa topping thất bại, vui lòng thử lại!');
+      console.error('delete topping error:', error);
+    }
+  };
+
+  const onDeleteTopping = async () => {
+    if (!selectedId) return;
+
+    try {
+      await deleteToppingApi(selectedId);
+      await getTopping();
+      setToastSuccess('Xóa thành công');
+      closeModalDelete();
+      setSelectedId(null);
+    } catch (error) {
+      setToastError('Xóa topping thất bại, vui lòng thử lại!');
+      console.error('Delete topping error:', error);
     }
   };
 
   useEffect(() => {
-    if (toast) {
+    if (toastSucess || toastError) {
       const timer = setTimeout(() => {
-        setToast('');
+        setToastSuccess('');
+        setToastError('');
       }, 3000);
 
       return () => clearTimeout(timer);
     }
-  }, [toast]);
+  }, [toastSucess, toastError]);
 
   return (
     <div>
       <Button
-        onClick={openModal}
+        onClick={openModalAdd}
         className="mb-4"
         size="sm"
         variant="primary"
@@ -132,15 +191,19 @@ export default function ToppingList() {
                   <TableCell className="px-4 py-3 text-gray-700 text-center text-theme-sm dark:text-gray-400">
                     {topping.name}
                   </TableCell>
+
                   <TableCell className="px-4 py-3 text-gray-700 text-center text-theme-sm dark:text-gray-400">
                     {toVNDFormat(topping.extraPrice)}
                   </TableCell>
-                  <TableCell className="px-4 py-3 text-gray-700 text-center text-theme-sm dark:text-gray-400">
-                    {formatDate(topping.createdAt)}
-                  </TableCell>
+
                   <TableCell className="px-4 py-3 text-gray-700 text-center text-theme-sm dark:text-gray-400">
                     {formatDate(topping.updatedAt)}
                   </TableCell>
+
+                  <TableCell className="px-4 py-3 text-gray-700 text-center text-theme-sm dark:text-gray-400">
+                    {formatDate(topping.createdAt)}
+                  </TableCell>
+
                   <TableCell className="px-4 py-3 text-gray-700 text-center text-theme-sm dark:text-gray-400">
                     <div className="relative inline-block">
                       <button
@@ -155,18 +218,26 @@ export default function ToppingList() {
                         className="w-40 p-2"
                       >
                         <DropdownItem
-                          onItemClick={() => {
+                          onItemClick={(event) => {
+                            event.stopPropagation();
+                            setFormData({
+                              name: topping.name,
+                              extraPrice: topping.extraPrice,
+                            });
+                            setSelectedId(topping._id);
+                            openModalEdit();
                             closeDropdown();
-                            // onDeletetopping(topping._id);
                           }}
                           className="flex w-full font-normal text-left text-gray-700 rounded-lg hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
                         >
                           Chỉnh sửa
                         </DropdownItem>
                         <DropdownItem
-                          onItemClick={() => {
+                          onItemClick={(event) => {
+                            event.stopPropagation();
+                            setSelectedId(topping._id);
+                            openModalDelete();
                             closeDropdown();
-                            onDeleteTopping(topping._id);
                           }}
                           className="flex w-full font-normal text-left text-gray-700 rounded-lg hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
                         >
@@ -183,8 +254,8 @@ export default function ToppingList() {
       </div>
 
       <Modal
-        isOpen={isOpen}
-        onClose={closeModal}
+        isOpen={isModalAddOpen}
+        onClose={closeModalAdd}
         className="max-w-[500px] p-6 lg:p-10"
       >
         <div className="flex flex-col px-2 overflow-y-auto custom-scrollbar">
@@ -192,39 +263,43 @@ export default function ToppingList() {
             Thêm topping
           </h5>
           <div className="mt-8">
-            <div>
+            <div className="mb-4">
               <label className="mb-1.5 block text-sm font-semibold text-gray-700 dark:text-gray-400">
                 Tên topping
               </label>
               <input
                 type="input"
-                value={toppingName}
-                onChange={(e) => setToppingName(e.target.value)}
+                value={formData.name}
+                onChange={(e) =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
                 className="dark:bg-dark-700 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-success-300 focus:outline-hidden focus:ring-3 focus:ring-success-500/10 dark:border-gray-700 dark:bg-gray-700 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-success-800"
               />
             </div>
-            <div>
+            <div className="mb-4">
               <label className="mb-1.5 block text-sm font-semibold text-gray-700 dark:text-gray-400">
                 Giá
               </label>
               <input
                 type="input"
-                value={toppingPrice}
-                onChange={(e) => setToppingPrice(e.target.value)}
+                value={formData.extraPrice}
+                onChange={(e) =>
+                  setFormData({ ...formData, extraPrice: e.target.value })
+                }
                 className="dark:bg-dark-700 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-success-300 focus:outline-hidden focus:ring-3 focus:ring-success-500/10 dark:border-gray-700 dark:bg-gray-700 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-success-800"
               />
             </div>
           </div>
           <div className="flex items-center gap-3 mt-6 modal-footer sm:justify-end">
             <button
-              onClick={closeModal}
+              onClick={closeModalAdd}
               type="button"
               className="flex w-full justify-center rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] sm:w-auto"
             >
               Đóng
             </button>
             <button
-              onClick={onAddtopping}
+              onClick={onAddTopping}
               type="button"
               className="btn btn-success btn-update-event flex w-full justify-center rounded-lg bg-success-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-success-600 sm:w-auto"
             >
@@ -234,12 +309,106 @@ export default function ToppingList() {
         </div>
       </Modal>
 
-      {toast && (
+      <Modal
+        isOpen={isModalEditOpen}
+        onClose={closeModalEdit}
+        className="max-w-[500px] p-6 lg:p-10"
+      >
+        <div className="flex flex-col px-2 overflow-y-auto custom-scrollbar">
+          <h5 className="mb-2 font-semibold text-gray-800 modal-title text-theme-xl dark:text-white/90 lg:text-2xl">
+            Chỉnh sửa topping
+          </h5>
+          <div className="mt-8">
+            <div className="mb-4">
+              <label className="mb-1.5 block text-sm font-semibold text-gray-700 dark:text-gray-400">
+                Tên topping
+              </label>
+              <input
+                type="input"
+                value={formData.name}
+                onChange={(e) =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
+                className="dark:bg-dark-700 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-success-300 focus:outline-hidden focus:ring-3 focus:ring-success-500/10 dark:border-gray-700 dark:bg-gray-700 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-success-800"
+              />
+            </div>
+            <div className="mb-4">
+              <label className="mb-1.5 block text-sm font-semibold text-gray-700 dark:text-gray-400">
+                Giá
+              </label>
+              <input
+                type="input"
+                value={formData.extraPrice}
+                onChange={(e) =>
+                  setFormData({ ...formData, extraPrice: e.target.value })
+                }
+                className="dark:bg-dark-700 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-success-300 focus:outline-hidden focus:ring-3 focus:ring-success-500/10 dark:border-gray-700 dark:bg-gray-700 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-success-800"
+              />
+            </div>
+          </div>
+          <div className="flex items-center gap-3 mt-6 modal-footer sm:justify-end">
+            <button
+              onClick={closeModalEdit}
+              type="button"
+              className="flex w-full justify-center rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] sm:w-auto"
+            >
+              Đóng
+            </button>
+            <button
+              onClick={onEditTopping}
+              type="button"
+              className="btn btn-success btn-update-event flex w-full justify-center rounded-lg bg-success-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-success-600 sm:w-auto"
+            >
+              Chỉnh sửa
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={isModalDeleteOpen}
+        onClose={closeModalDelete}
+        className="max-w-[500px] p-6 lg:p-10"
+      >
+        <div className="flex flex-col px-2 overflow-y-auto custom-scrollbar">
+          <h5 className="mb-2 font-semibold text-gray-800 modal-title text-theme-xl dark:text-white/90 lg:text-2xl">
+            Bạn có chắc chắn muốn xóa không?
+          </h5>
+
+          <div className="flex items-center gap-3 mt-6 modal-footer sm:justify-end">
+            <button
+              onClick={closeModalDelete}
+              type="button"
+              className="flex w-full justify-center rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] sm:w-auto"
+            >
+              Đóng
+            </button>
+            <button
+              onClick={onDeleteTopping}
+              type="button"
+              className="btn btn-success btn-update-event flex w-full justify-center rounded-lg bg-success-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-success-600 sm:w-auto"
+            >
+              Xóa
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {toastSucess && (
         <Alert
-          isVisible={!!toast}
+          isVisible={!!toastSucess}
           variant={'success'}
           title={'Thành công'}
-          message={toast || 'Thêm thành công!'}
+          message={toastSucess || 'Thêm thành công!'}
+        />
+      )}
+
+      {toastError && (
+        <Alert
+          isVisible={!!toastError}
+          variant={'error'}
+          title={'Thất bại'}
+          message={toastError || 'Thêm thất bại!'}
         />
       )}
     </div>

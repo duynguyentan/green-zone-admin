@@ -17,6 +17,16 @@ export const createToppingApi = (name: string, extraPrice: string) =>
     extraPrice: parseInt(extraPrice),
   });
 
+export const editToppingApi = (
+  toppingId: string,
+  name: string,
+  extraPrice: string
+) =>
+  axios.put(`${appSettings.V1}/topping/${toppingId}`, {
+    name,
+    extraPrice,
+  });
+
 export const deleteToppingApi = (toppingId: string) =>
   axios.delete(`${appSettings.V1}/topping/${toppingId}`);
 

@@ -26,23 +26,47 @@ import InputUpload from '../../../components/form/input/InputUpload';
 import TextArea from '../../../components/form/input/TextArea';
 import DatePicker from '../../../components/form/input/DatePicker';
 import { appSettings } from '../../../api/axios/config';
+import Select from '../../../components/form/Select';
 
 export default function VoucherList() {
   const [vouchers, setVouchers] = useState<IVoucher[]>([]);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
-  const { isOpen, openModal, closeModal } = useModal();
   const [detailSelected, setDetailSelected] = useState<IVoucher | null>(null);
+
+  const {
+    isOpen: isModalAddOpen,
+    openModal: openModalAdd,
+    closeModal: closeModalAdd,
+  } = useModal();
+  // const {
+  //   isOpen: isModalEditOpen,
+  //   openModal: openModalEdit,
+  //   closeModal: closeModalEdit,
+  // } = useModal();
+
+  const {
+    isOpen: isModalDeleteOpen,
+    openModal: openModalDelete,
+    closeModal: closeModalDelete,
+  } = useModal();
+
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const defaultFormData = {
+    name: '',
+    selectedFile: null as File | null,
+    description: '',
+    code: '',
+    voucherType: '',
+    discountType: '',
+    requiredPoints: '',
+    value: '',
+    startDate: '',
+    endDate: '',
+  };
+  const [formData, setFormData] = useState(defaultFormData);
 
   const [toastSucess, setToastSuccess] = useState('');
   const [toastError, setToastError] = useState('');
-
-  const [newVoucherName, setNewVoucherName] = useState('');
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [voucherDes, setVoucherDesc] = useState('');
-  const [voucherCode, setVoucherCode] = useState('');
-  const [discountValue, setDiscoundValue] = useState('');
-  const [startDate, setStartDate] = useState<string>('');
-  const [endDate, setEndDate] = useState<string>('');
 
   useEffect(() => {
     getVoucher();
@@ -54,21 +78,32 @@ export default function VoucherList() {
   };
 
   const onAddVoucher = async () => {
+    const {
+      name,
+      selectedFile,
+      description,
+      code,
+      voucherType,
+      discountType,
+      requiredPoints,
+      value,
+      startDate,
+      endDate,
+    } = formData;
+
     try {
-      if (!newVoucherName || !selectedFile) {
+      if (!name || !selectedFile) {
         setToastError('Vui lòng nhập tên voucher và chọn ảnh!');
         return;
       }
 
-      // Upload ảnh và kiểm tra lỗi
       const uploadResponse = await uploadFileApi(selectedFile);
       if (!uploadResponse || !uploadResponse.url) {
         setToastError('Upload ảnh thất bại. Vui lòng thử lại!');
         return;
       }
 
-      // Chuyển đổi dữ liệu hợp lệ
-      const discount = parseInt(discountValue);
+      const discount = parseInt(value);
       if (isNaN(discount) || discount < 0) {
         setToastError('Giá trị giảm giá không hợp lệ!');
         return;
@@ -81,19 +116,22 @@ export default function VoucherList() {
       }
 
       await createVoucherApi({
-        name: newVoucherName,
+        name,
         image: `${appSettings.BASE_API_URL}${uploadResponse.url}`,
-        description: voucherDes,
-        code: voucherCode,
-        discountType: 'percentage',
-        discountValue: discount,
+        description,
+        code,
+        discountType,
+        voucherType,
+        requiredPoints:
+          voucherType === 'seed' ? parseInt(requiredPoints) : undefined,
+        value: discount,
         startDate: new Date(startDate).toISOString(),
         endDate: new Date(endDate).toISOString(),
       });
 
       setToastSuccess('Thêm voucher thành công!');
       getVoucher();
-      closeModal();
+      closeModalAdd();
     } catch (error) {
       console.error('Create voucher error:', error);
       setToastError('Lỗi khi tạo voucher. Vui lòng thử lại!');
@@ -108,20 +146,19 @@ export default function VoucherList() {
     setOpenMenuId(null);
   };
 
-  const onDeleteVoucher = async (voucherId: string) => {
-    try {
-      const confirmDelete = window.confirm(
-        'Bạn có chắc chắn muốn xóa voucher này?'
-      );
-      if (!confirmDelete) return;
+  const onDeleteVoucher = async () => {
+    if (!selectedId) return;
 
-      await deleteVoucherApi(voucherId);
+    try {
+      await deleteVoucherApi(selectedId);
 
       setToastSuccess('Xóa voucher thành công!');
       getVoucher();
-    } catch (error) {
+      setSelectedId(null);
+      closeModalDelete();
+    } catch (error: any) {
       console.error('Lỗi khi xóa voucher:', error);
-      setToastError('Xóa voucher thất bại. Vui lòng thử lại!');
+      setToastError(error.message);
     }
   };
 
@@ -140,15 +177,9 @@ export default function VoucherList() {
     <div>
       <Button
         onClick={() => {
-          setNewVoucherName('');
-          setSelectedFile(null);
-          setVoucherDesc('');
-          setVoucherCode('');
-          setDiscoundValue('');
-          setStartDate('');
-          setEndDate('');
+          setFormData(defaultFormData);
 
-          openModal();
+          openModalAdd();
         }}
         className="mb-4"
         size="sm"
@@ -229,7 +260,7 @@ export default function VoucherList() {
                   <TableCell className="px-4 py-3 text-gray-600 text-center text-theme-sm dark:text-gray-400">
                     {voucher.voucherType === 'global'
                       ? 'Toàn bộ hệ thống'
-                      : 'Điểm seed'}
+                      : 'Đổi điểm Seed'}
                   </TableCell>
 
                   <TableCell className="px-4 py-3 text-gray-600 text-center text-theme-sm dark:text-gray-400">
@@ -254,20 +285,22 @@ export default function VoucherList() {
                         onClose={closeDropdown}
                         className="w-40 p-2"
                       >
-                        <DropdownItem
+                        {/* <DropdownItem
                           onItemClick={(event) => {
                             event.stopPropagation();
+
                             closeDropdown();
-                            // onDeleteStore(voucher._id);
                           }}
                           className="flex w-full font-normal text-left text-gray-700 rounded-lg hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
                         >
                           Chỉnh sửa
-                        </DropdownItem>
+                        </DropdownItem> */}
                         <DropdownItem
                           onItemClick={(event) => {
                             event.stopPropagation();
-                            onDeleteVoucher(voucher._id);
+
+                            setSelectedId(voucher._id);
+                            openModalDelete();
                             closeDropdown();
                           }}
                           className="flex w-full font-normal text-left text-gray-700 rounded-lg hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
@@ -285,23 +318,25 @@ export default function VoucherList() {
       </div>
 
       <Modal
-        isOpen={isOpen}
-        onClose={closeModal}
+        isOpen={isModalAddOpen}
+        onClose={closeModalAdd}
         className="max-w-[500px] p-6 lg:p-10"
       >
-        <div className="flex flex-col px-2 overflow-y-auto custom-scrollbar">
+        <div className="flex flex-col px-2 overflow-y-auto custom-scrollbar max-h-146">
           <h5 className="mb-3 font-semibold text-gray-800 modal-title text-theme-xl dark:text-white/90 lg:text-2xl">
             Thêm voucher
           </h5>
           <div className="mt-4">
             <div className="mb-3">
               <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-400">
-                Tên
+                Tên voucher
               </label>
               <input
                 type="input"
-                value={newVoucherName}
-                onChange={(e) => setNewVoucherName(e.target.value)}
+                value={formData.name}
+                onChange={(e) =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
                 className="dark:bg-dark-700 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-success-300 focus:outline-hidden focus:ring-3 focus:ring-success-500/10 dark:border-gray-700 dark:bg-gray-700 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-success-800"
               />
             </div>
@@ -312,19 +347,93 @@ export default function VoucherList() {
               </label>
 
               <InputUpload
-                selectedFile={selectedFile}
-                onFileSelect={setSelectedFile}
+                selectedFile={formData.selectedFile}
+                onFileSelect={(file) =>
+                  setFormData({ ...formData, selectedFile: file })
+                }
               />
             </div>
 
             <div className="mb-3">
               <TextArea
                 rows={3}
-                value={voucherDes}
                 error
-                onChange={(value) => setVoucherDesc(value)}
+                value={formData.description}
+                onChange={(value) =>
+                  setFormData({
+                    ...formData,
+                    description: value,
+                  })
+                }
               />
             </div>
+
+            <div className="flex mb-3 gap-2">
+              <div className="w-full ">
+                <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+                  Loại voucher
+                </label>
+                <Select
+                  placeholder="Loại voucher"
+                  options={[
+                    {
+                      label: 'Toàn bộ cửa hàng',
+                      value: 'global',
+                    },
+                    {
+                      label: 'Đổi điểm seed',
+                      value: 'seed',
+                    },
+                  ].map((item) => ({
+                    label: item.label,
+                    value: item.value,
+                  }))}
+                  onChange={(value) =>
+                    setFormData({ ...formData, voucherType: value || '' })
+                  }
+                />
+              </div>
+              <div className="w-full ">
+                <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+                  Loại giảm giá
+                </label>
+                <Select
+                  placeholder="Loại voucher"
+                  options={[
+                    {
+                      label: 'Giá trị cố định',
+                      value: 'fixedAmount',
+                    },
+                    {
+                      label: 'Phần trăm',
+                      value: 'percentage',
+                    },
+                  ].map((item) => ({
+                    label: item.label,
+                    value: item.value,
+                  }))}
+                  onChange={(value) =>
+                    setFormData({ ...formData, discountType: value || '' })
+                  }
+                />
+              </div>
+            </div>
+
+            {formData.voucherType === 'seed' && (
+              <div className="w-full">
+                <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+                  Số điểm cần đổi
+                </label>
+                <input
+                  type="input"
+                  value={formData.requiredPoints}
+                  onChange={(e) =>
+                    setFormData({ ...formData, requiredPoints: e.target.value })
+                  }
+                  className="dark:bg-dark-700 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-success-300 focus:outline-hidden focus:ring-3 focus:ring-success-500/10 dark:border-gray-700 dark:bg-gray-700 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-success-800"
+                />
+              </div>
+            )}
 
             <div className="mb-3 grid grid-cols-2 gap-2">
               <div>
@@ -333,8 +442,10 @@ export default function VoucherList() {
                 </label>
                 <input
                   type="input"
-                  value={voucherCode}
-                  onChange={(e) => setVoucherCode(e.target.value)}
+                  value={formData.code}
+                  onChange={(e) =>
+                    setFormData({ ...formData, code: e.target.value })
+                  }
                   className="dark:bg-dark-700 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-success-300 focus:outline-hidden focus:ring-3 focus:ring-success-500/10 dark:border-gray-700 dark:bg-gray-700 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-success-800"
                 />
               </div>
@@ -345,29 +456,45 @@ export default function VoucherList() {
                 </label>
                 <input
                   type="input"
-                  value={discountValue}
-                  onChange={(e) => setDiscoundValue(e.target.value)}
+                  value={formData.value}
+                  onChange={(e) =>
+                    setFormData({ ...formData, value: e.target.value })
+                  }
                   className="dark:bg-dark-700 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-success-300 focus:outline-hidden focus:ring-3 focus:ring-success-500/10 dark:border-gray-700 dark:bg-gray-700 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-success-800"
                 />
               </div>
             </div>
 
-            <div className="mb-3 grid grid-cols-2 gap-2">
-              <DatePicker
-                value={startDate}
-                onChange={(value) => setStartDate(value)}
-                placeholder="Ngày bắt đầu"
-              />
-              <DatePicker
-                value={endDate}
-                onChange={(value) => setEndDate(value)}
-                placeholder=" Ngày kết thúc"
-              />
+            <div className="flex mb-3 gap-2">
+              <div className="w-full ">
+                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-400">
+                  Ngày bắt đầu
+                </label>
+                <DatePicker
+                  value={formData.startDate}
+                  onChange={(value) =>
+                    setFormData({ ...formData, startDate: value })
+                  }
+                  placeholder="Ngày bắt đầu"
+                />
+              </div>
+              <div className="w-full ">
+                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-400">
+                  Ngày bắt đầu
+                </label>
+                <DatePicker
+                  value={formData.endDate}
+                  onChange={(value) =>
+                    setFormData({ ...formData, endDate: value })
+                  }
+                  placeholder=" Ngày kết thúc"
+                />
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-3 mt-6 modal-footer sm:justify-end">
             <button
-              onClick={closeModal}
+              onClick={closeModalAdd}
               type="button"
               className="flex w-full justify-center rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] sm:w-auto"
             >
@@ -379,6 +506,35 @@ export default function VoucherList() {
               className="btn btn-success btn-update-event flex w-full justify-center rounded-lg bg-success-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-success-600 sm:w-auto"
             >
               Thêm mới
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={isModalDeleteOpen}
+        onClose={closeModalDelete}
+        className="max-w-[500px] p-6 lg:p-10"
+      >
+        <div className="flex flex-col px-2 overflow-y-auto custom-scrollbar">
+          <h5 className="mb-2 font-semibold text-gray-800 modal-title text-theme-xl dark:text-white/90 lg:text-2xl">
+            Bạn có chắc chắn muốn xóa không?
+          </h5>
+
+          <div className="flex items-center gap-3 mt-6 modal-footer sm:justify-end">
+            <button
+              onClick={closeModalDelete}
+              type="button"
+              className="flex w-full justify-center rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] sm:w-auto"
+            >
+              Đóng
+            </button>
+            <button
+              onClick={onDeleteVoucher}
+              type="button"
+              className="btn btn-success btn-update-event flex w-full justify-center rounded-lg bg-success-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-success-600 sm:w-auto"
+            >
+              Xóa
             </button>
           </div>
         </div>

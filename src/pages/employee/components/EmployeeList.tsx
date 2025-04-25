@@ -143,6 +143,7 @@ export default function EmployeeList() {
       getEmployee();
       closeModal1();
     } catch (error) {
+      setToastError('Thêm nhân viên thất bại, vui lòng thử lại!');
       console.error('Create Employee error:', error);
     }
   };
@@ -189,6 +190,7 @@ export default function EmployeeList() {
       getEmployee();
       closeModal3();
     } catch (error) {
+      setToastError('Chỉnh sửa nhân viên thất bại, vui lòng thử lại!');
       console.error('Edit Employee error:', error);
     }
   };
@@ -208,6 +210,7 @@ export default function EmployeeList() {
       setToastSuccess('Cập nhật mật khẩu thành công');
       closeModal2();
     } catch (error) {
+      setToastError('Cập nhật mật khẩu thất bại, vui lòng thử lại!');
       console.log('update password error: ', error);
     }
   };

@@ -9,6 +9,7 @@ import {
 import {
   createCategoryApi,
   deleteCategoryApi,
+  editCategoryApi,
   getCategoryApi,
 } from '../../../api/modules';
 import { useModal } from '../../../hooks/useModal';
@@ -32,13 +33,33 @@ export default function CategoryList() {
 
   const [categories, setCategories] = useState<ICategory[]>([]);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
-  const { isOpen, openModal, closeModal } = useModal();
 
   const [toastSucess, setToastSuccess] = useState('');
   const [toastError, setToastError] = useState('');
 
-  const [newCategory, setNewCategory] = useState('');
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [formData, setFormData] = useState({
+    name: '',
+    selectedFile: null as File | null,
+  });
+
+  const {
+    isOpen: isModalAddOpen,
+    openModal: openModalAdd,
+    closeModal: closeModalAdd,
+  } = useModal();
+
+  const {
+    isOpen: isModalEditOpen,
+    openModal: openModalEdit,
+    closeModal: closeModalEdit,
+  } = useModal();
+
+  const {
+    isOpen: isModalDeleteOpen,
+    openModal: openModalDelete,
+    closeModal: closeModalDelete,
+  } = useModal();
 
   useEffect(() => {
     getCategory();
@@ -68,8 +89,10 @@ export default function CategoryList() {
   }, [currentPage]);
 
   const onAddCategory = async () => {
+    const { name, selectedFile } = formData;
+
     try {
-      if (!newCategory || !selectedFile) {
+      if (!name || !selectedFile) {
         setToastError('Vui lòng nhập tên danh mục và chọn ảnh!');
         return;
       }
@@ -82,34 +105,67 @@ export default function CategoryList() {
         return;
       }
 
-      await createCategoryApi(
-        newCategory,
-        `${appSettings.BASE_API_URL}${iconUrl}`
-      );
+      await createCategoryApi(name, `${appSettings.BASE_API_URL}${iconUrl}`);
 
       setToastSuccess('Thêm danh mục thành công!');
       await getCategory();
-      closeModal();
+      closeModalAdd();
     } catch (error) {
       console.error('Create category error:', error);
       setToastError('Thêm danh mục thất bại, vui lòng thử lại!');
     }
   };
 
-  const onDeleteCategory = async (categoryId: string) => {
+  const onEditCategory = async () => {
+    if (!selectedId) return;
+
     try {
-      const confirmDelete = window.confirm(
-        'Bạn có chắc chắn muốn xóa danh mục này?'
+      const { name, selectedFile } = formData;
+
+      if (!name) {
+        setToastError('Vui lòng nhập tên danh mục!');
+        return;
+      }
+
+      let categoryUrl: string | undefined = undefined;
+
+      if (selectedFile) {
+        const uploadResponse = await uploadFileApi(selectedFile);
+        const iconUrl = uploadResponse?.url;
+
+        if (!iconUrl) {
+          setToastError('Lỗi khi tải ảnh lên, vui lòng thử lại!');
+          return;
+        }
+
+        categoryUrl = appSettings.BASE_API_URL + iconUrl;
+      }
+
+      await editCategoryApi(
+        selectedId,
+        name,
+        categoryUrl
       );
-      if (!confirmDelete) return;
 
-      await deleteCategoryApi(categoryId);
-
-      setToastSuccess('Xóa danh mục thành công!');
+      setToastSuccess('Thêm danh mục thành công!');
+      setSelectedId(null);
       await getCategory();
-      setToastSuccess('');
-      setToastError('');
-      closeModal();
+      closeModalEdit();
+    } catch (error) {
+      console.error('Create category error:', error);
+      setToastError('Thêm danh mục thất bại, vui lòng thử lại!');
+    }
+  };
+
+  const onDeleteCategory = async () => {
+    if (!selectedId) return;
+
+    try {
+      await deleteCategoryApi(selectedId);
+      setToastSuccess('Xóa danh mục thành công!');
+      setSelectedId(null);
+      await getCategory();
+      closeModalDelete();
     } catch (error) {
       console.error('Delete category error:', error);
       setToastError('Xóa danh mục thất bại, vui lòng thử lại!');
@@ -130,7 +186,7 @@ export default function CategoryList() {
   return (
     <div>
       <Button
-        onClick={openModal}
+        onClick={openModalAdd}
         className="mb-4"
         size="sm"
         variant="primary"
@@ -206,18 +262,27 @@ export default function CategoryList() {
                         className="w-40 p-2"
                       >
                         <DropdownItem
-                          onItemClick={() => {
+                          onItemClick={(event) => {
+                            event.stopPropagation();
+                            setFormData({
+                              name: category.name,
+                              selectedFile: null,
+                            });
+                            setSelectedId(category._id);
+                            openModalEdit();
                             closeDropdown();
-                            // onDeleteCategory(category._id);
                           }}
                           className="flex w-full font-normal text-left text-gray-700 rounded-lg hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
                         >
                           Chỉnh sửa
                         </DropdownItem>
                         <DropdownItem
-                          onItemClick={() => {
+                          onItemClick={(event) => {
+                            event.stopPropagation();
+
+                            setSelectedId(category._id);
+                            openModalDelete();
                             closeDropdown();
-                            onDeleteCategory(category._id);
                           }}
                           className="flex w-full font-normal text-left text-gray-700 rounded-lg hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
                         >
@@ -245,8 +310,8 @@ export default function CategoryList() {
       />
 
       <Modal
-        isOpen={isOpen}
-        onClose={closeModal}
+        isOpen={isModalAddOpen}
+        onClose={closeModalAdd}
         className="max-w-[500px] p-6 lg:p-10"
       >
         <div className="flex flex-col px-2 overflow-y-auto custom-scrollbar">
@@ -260,8 +325,10 @@ export default function CategoryList() {
               </label>
               <input
                 type="input"
-                value={newCategory}
-                onChange={(e) => setNewCategory(e.target.value)}
+                value={formData.name}
+                onChange={(e) =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
                 className="dark:bg-dark-700 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-success-300 focus:outline-hidden focus:ring-3 focus:ring-success-500/10 dark:border-gray-700 dark:bg-gray-700 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-success-800"
               />
             </div>
@@ -270,14 +337,16 @@ export default function CategoryList() {
                 Icon
               </label>
               <InputUpload
-                selectedFile={selectedFile}
-                onFileSelect={setSelectedFile}
+                selectedFile={formData.selectedFile}
+                onFileSelect={(file) =>
+                  setFormData({ ...formData, selectedFile: file })
+                }
               />
             </div>
           </div>
           <div className="flex items-center gap-3 mt-6 modal-footer sm:justify-end">
             <button
-              onClick={closeModal}
+              onClick={closeModalAdd}
               type="button"
               className="flex w-full justify-center rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] sm:w-auto"
             >
@@ -289,6 +358,89 @@ export default function CategoryList() {
               className="btn btn-success btn-update-event flex w-full justify-center rounded-lg bg-success-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-success-600 sm:w-auto"
             >
               Thêm mới
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={isModalEditOpen}
+        onClose={closeModalEdit}
+        className="max-w-[500px] p-6 lg:p-10"
+      >
+        <div className="flex flex-col px-2 overflow-y-auto custom-scrollbar">
+          <h5 className="mb-2 font-semibold text-gray-800 modal-title text-theme-xl dark:text-white/90 lg:text-2xl">
+            Chỉnh sửa danh mục
+          </h5>
+          <div className="mt-8">
+            <div>
+              <label className="mb-1.5 block text-sm font-semibold text-gray-700 dark:text-gray-400">
+                Tên danh mục
+              </label>
+              <input
+                type="input"
+                value={formData.name}
+                onChange={(e) =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
+                className="dark:bg-dark-700 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-success-300 focus:outline-hidden focus:ring-3 focus:ring-success-500/10 dark:border-gray-700 dark:bg-gray-700 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-success-800"
+              />
+            </div>
+            <div className="mt-6">
+              <label className="mb-1.5 block text-sm font-semibold text-gray-700 dark:text-gray-400">
+                Icon
+              </label>
+              <InputUpload
+                selectedFile={formData.selectedFile}
+                onFileSelect={(file) =>
+                  setFormData({ ...formData, selectedFile: file })
+                }
+              />
+            </div>
+          </div>
+          <div className="flex items-center gap-3 mt-6 modal-footer sm:justify-end">
+            <button
+              onClick={closeModalEdit}
+              type="button"
+              className="flex w-full justify-center rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] sm:w-auto"
+            >
+              Đóng
+            </button>
+            <button
+              onClick={onEditCategory}
+              type="button"
+              className="btn btn-success btn-update-event flex w-full justify-center rounded-lg bg-success-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-success-600 sm:w-auto"
+            >
+              Chỉnh sửa
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={isModalDeleteOpen}
+        onClose={closeModalDelete}
+        className="max-w-[500px] p-6 lg:p-10"
+      >
+        <div className="flex flex-col px-2 overflow-y-auto custom-scrollbar">
+          <h5 className="mb-2 font-semibold text-gray-800 modal-title text-theme-xl dark:text-white/90 lg:text-2xl">
+            Bạn có chắc chắn muốn xóa không?
+          </h5>
+
+          <div className="flex items-center gap-3 mt-6 modal-footer sm:justify-end">
+            <button
+              onClick={closeModalDelete}
+              type="button"
+              className="flex w-full justify-center rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] sm:w-auto"
+            >
+              Đóng
+            </button>
+            <button
+              onClick={onDeleteCategory}
+              type="button"
+              className="btn btn-success btn-update-event flex w-full justify-center rounded-lg bg-success-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-success-600 sm:w-auto"
+            >
+              Xóa
             </button>
           </div>
         </div>

@@ -9,6 +9,7 @@ import {
 import {
   createStoreApi,
   deleteStoreApi,
+  editStoreApi,
   getStoreApi,
 } from '../../../api/modules';
 import { useModal } from '../../../hooks/useModal';
@@ -34,27 +35,47 @@ export default function StoreList() {
   const [totalPages, setTotalPages] = useState(1);
   const [stores, setStore] = useState<IStore[]>([]);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
-  const { isOpen, openModal, closeModal } = useModal();
+  const [detailSelected, setDetailSelected] = useState<IStore | null>(null);
+
+  const {
+    isOpen: isModalAddOpen,
+    openModal: openModalAdd,
+    closeModal: closeModalAdd,
+  } = useModal();
+
+  const {
+    isOpen: isModalEditOpen,
+    openModal: openModalEdit,
+    closeModal: closeModalEdit,
+  } = useModal();
+
+  const {
+    isOpen: isModalDeleteOpen,
+    openModal: openModalDelete,
+    closeModal: closeModalDelete,
+  } = useModal();
+
   const [toastSucess, setToastSuccess] = useState('');
   const [toastError, setToastError] = useState('');
-
-  const [detailSelected, setDetailSelected] = useState<IStore | null>(null);
 
   const [search, setSearch] = useState('');
   const [addressesResult, setAddressesResult] = useState<
     { description: string; place_id: string }[]
   >([]);
 
-  const [newStoreName, setNewStoreName] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-  const [storeAddress, setStoreAddress] = useState<{
-    description: string;
-    place_id: string;
-  }>();
-
-  const [openTime, setOpenTime] = useState('');
-  const [closeTime, setCloseTime] = useState('');
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const defaultFormData = {
+    name: '',
+    phoneNumber: '',
+    selectedFiles: [] as File[],
+    address: {
+      description: '',
+      place_id: '',
+    },
+    openTime: '',
+    closeTime: '',
+  };
+  const [formData, setFormData] = useState(defaultFormData);
 
   useEffect(() => {
     getListStore();
@@ -81,8 +102,11 @@ export default function StoreList() {
   };
 
   const onAddStore = async () => {
+    const { name, phoneNumber, selectedFiles, address, openTime, closeTime } =
+      formData;
+
     try {
-      if (!newStoreName || !phoneNumber || !storeAddress?.description) {
+      if (!name || !phoneNumber || !address.place_id) {
         setToastError('Thông tin sản phẩm chưa đầy đủ');
         return;
       }
@@ -96,13 +120,13 @@ export default function StoreList() {
       const imagesUrls = uploadResponse.urls.map(
         (url) => appSettings.BASE_API_URL + url
       );
-      const { result } = await getLatLongApi(storeAddress?.place_id);
+      const { result } = await getLatLongApi(address?.place_id);
 
       await createStoreApi({
-        name: newStoreName,
+        name,
         phoneNumber,
         images: imagesUrls,
-        address: storeAddress.description,
+        address: address.description,
         latitude: result.geometry.location.lat.toString(),
         longitude: result.geometry.location.lng.toString(),
         openTime,
@@ -111,7 +135,50 @@ export default function StoreList() {
 
       getListStore();
       setToastSuccess('Thêm cửa hàng thành công!');
-      closeModal();
+      closeModalAdd();
+    } catch (error) {
+      console.error('Create store error:', error);
+    }
+  };
+
+  const onEditStore = async () => {
+    if (!selectedId) return;
+
+    const { name, phoneNumber, selectedFiles, address, openTime, closeTime } =
+      formData;
+
+    try {
+      if (!name || !phoneNumber || !address.place_id) {
+        setToastError('Thông tin sản phẩm chưa đầy đủ');
+        return;
+      }
+
+      const uploadResponse = await uploadMultipleFilesApi(selectedFiles);
+      if (!uploadResponse || !uploadResponse.urls.length) {
+        setToastError('Tải ảnh lên thất bại');
+        return;
+      }
+
+      const imagesUrls = uploadResponse.urls.map(
+        (url) => appSettings.BASE_API_URL + url
+      );
+      const { result } = await getLatLongApi(address?.place_id);
+
+      await editStoreApi(selectedId, {
+        name,
+        phoneNumber,
+        images: imagesUrls,
+        address: address.description,
+        latitude: result.geometry.location.lat.toString(),
+        longitude: result.geometry.location.lng.toString(),
+        openTime,
+        closeTime,
+      });
+
+      getListStore();
+      setToastSuccess('Chỉnh sửa thông cửa hàng thành công!');
+      closeModalEdit();
+      setSelectedId(null);
     } catch (error) {
       console.error('Create store error:', error);
     }
@@ -125,17 +192,16 @@ export default function StoreList() {
     setOpenMenuId(null);
   };
 
-  const onDeleteStore = async (storeId: string) => {
-    try {
-      const confirmDelete = window.confirm(
-        'Bạn có chắc chắn muốn xóa cửa hàng này?'
-      );
-      if (!confirmDelete) return;
+  const onDeleteStore = async () => {
+    if (!selectedId) return;
 
-      await deleteStoreApi(storeId);
+    try {
+      await deleteStoreApi(selectedId);
 
       setToastSuccess('Xóa cửa hàng thành công!');
-      await getListStore();
+      getListStore();
+      closeModalDelete();
+      setSelectedId(null);
     } catch (error) {
       console.error('Delete store error:', error);
       setToastError('Xóa cửa hàng thất bại, vui lòng thử lại!');
@@ -156,7 +222,7 @@ export default function StoreList() {
   return (
     <div>
       <Button
-        onClick={openModal}
+        onClick={openModalAdd}
         className="mb-4"
         size="sm"
         variant="primary"
@@ -252,8 +318,21 @@ export default function StoreList() {
                         <DropdownItem
                           onItemClick={(event) => {
                             event.stopPropagation();
+                            setFormData({
+                              name: store.name,
+                              phoneNumber: store.phoneNumber,
+                              selectedFiles: [],
+                              address: {
+                                description: store.specificAddress,
+                                place_id: '',
+                              },
+                              openTime: store.openTime,
+                              closeTime: store.closeTime,
+                            });
+
+                            setSelectedId(store._id);
+                            openModalEdit();
                             closeDropdown();
-                            // onDeleteStore(store._id);
                           }}
                           className="flex w-full font-normal text-left text-gray-700 rounded-lg hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
                         >
@@ -262,7 +341,8 @@ export default function StoreList() {
                         <DropdownItem
                           onItemClick={(event) => {
                             event.stopPropagation();
-                            onDeleteStore(store._id);
+                            setSelectedId(store._id);
+                            openModalDelete();
                             closeDropdown();
                           }}
                           className="flex w-full font-normal text-left text-gray-700 rounded-lg hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
@@ -289,8 +369,8 @@ export default function StoreList() {
       />
 
       <Modal
-        isOpen={isOpen}
-        onClose={closeModal}
+        isOpen={isModalAddOpen}
+        onClose={closeModalAdd}
         className="max-w-[500px] p-6 lg:p-10"
       >
         <div className="flex flex-col px-2 overflow-y-auto custom-scrollbar">
@@ -304,11 +384,18 @@ export default function StoreList() {
                   Địa chỉ <span className="text-red-500">*</span>
                 </label>
                 <SearchResultInput
-                  placeholder="Tìm kiếm ..."
+                  placeholder="Nhập địa chỉ"
                   onSearch={setSearch}
                   results={addressesResult}
                   onSelect={(placeId: string, description: string) => {
-                    setStoreAddress({ place_id: placeId, description });
+                    setFormData({
+                      ...formData,
+                      address: {
+                        ...formData.address,
+                        description,
+                        place_id: placeId,
+                      },
+                    });
                   }}
                 />
               </div>
@@ -318,8 +405,10 @@ export default function StoreList() {
               </label>
               <input
                 type="input"
-                value={newStoreName}
-                onChange={(e) => setNewStoreName(e.target.value)}
+                value={formData.name}
+                onChange={(e) =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
                 className="dark:bg-dark-700 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-success-300 focus:outline-hidden focus:ring-3 focus:ring-success-500/10 dark:border-gray-700 dark:bg-gray-700 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-success-800"
               />
             </div>
@@ -329,8 +418,10 @@ export default function StoreList() {
               </label>
               <input
                 type="input"
-                value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}
+                value={formData.phoneNumber}
+                onChange={(e) =>
+                  setFormData({ ...formData, phoneNumber: e.target.value })
+                }
                 className="dark:bg-dark-700 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-success-300 focus:outline-hidden focus:ring-3 focus:ring-success-500/10 dark:border-gray-700 dark:bg-gray-700 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-success-800"
               />
             </div>
@@ -340,8 +431,10 @@ export default function StoreList() {
               </label>
 
               <InputMultipleUpload
-                selectedFiles={selectedFiles}
-                onFilesSelect={setSelectedFiles}
+                selectedFiles={formData.selectedFiles}
+                onFilesSelect={(files: File[]) =>
+                  setFormData({ ...formData, selectedFiles: files })
+                }
               />
             </div>
 
@@ -353,17 +446,21 @@ export default function StoreList() {
                 <input
                   type="time"
                   step="1"
-                  value={openTime}
+                  value={formData.openTime}
+                  onChange={(e) =>
+                    setFormData({ ...formData, openTime: e.target.value })
+                  }
                   placeholder="hh:mm:ss AM/PM"
-                  onChange={(e) => setOpenTime(e.target.value)}
                   className="dark:bg-dark-700 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-success-300 focus:outline-hidden focus:ring-3 focus:ring-success-500/10 dark:border-gray-700 dark:bg-gray-700 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-success-800"
                 />
                 <input
                   type="time"
                   step="1"
-                  value={closeTime}
+                  value={formData.closeTime}
+                  onChange={(e) =>
+                    setFormData({ ...formData, closeTime: e.target.value })
+                  }
                   placeholder="hh:mm:ss AM/PM"
-                  onChange={(e) => setCloseTime(e.target.value)}
                   className="dark:bg-dark-700 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-success-300 focus:outline-hidden focus:ring-3 focus:ring-success-500/10 dark:border-gray-700 dark:bg-gray-700 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-success-800"
                 />
               </div>
@@ -371,7 +468,7 @@ export default function StoreList() {
           </div>
           <div className="flex items-center gap-3 mt-6 modal-footer sm:justify-end">
             <button
-              onClick={closeModal}
+              onClick={closeModalAdd}
               type="button"
               className="flex w-full justify-center rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] sm:w-auto"
             >
@@ -383,6 +480,152 @@ export default function StoreList() {
               className="btn btn-success btn-update-event flex w-full justify-center rounded-lg bg-success-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-success-600 sm:w-auto"
             >
               Thêm mới
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={isModalEditOpen}
+        onClose={closeModalEdit}
+        className="max-w-[500px] p-6 lg:p-10"
+      >
+        <div className="flex flex-col px-2 overflow-y-auto custom-scrollbar">
+          <h5 className="mb-3 font-semibold text-gray-800 modal-title text-theme-xl dark:text-white/90 lg:text-2xl">
+            Chỉnh sửa cửa hàng
+          </h5>
+          <div className="mt-4">
+            <div className="mb-3">
+              <div className="mb-3">
+                <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-400">
+                  Địa chỉ <span className="text-red-500">*</span>
+                </label>
+                <SearchResultInput
+                  placeholder="Nhập địa chỉ"
+                  onSearch={setSearch}
+                  results={addressesResult}
+                  onSelect={(placeId: string, description: string) => {
+                    setFormData({
+                      ...formData,
+                      address: {
+                        ...formData.address,
+                        description,
+                        place_id: placeId,
+                      },
+                    });
+                  }}
+                />
+              </div>
+
+              <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-400">
+                Tên cửa hàng <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="input"
+                value={formData.name}
+                onChange={(e) =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
+                className="dark:bg-dark-700 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-success-300 focus:outline-hidden focus:ring-3 focus:ring-success-500/10 dark:border-gray-700 dark:bg-gray-700 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-success-800"
+              />
+            </div>
+            <div className="mb-3">
+              <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-400">
+                Số điện thoại <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="input"
+                value={formData.phoneNumber}
+                onChange={(e) =>
+                  setFormData({ ...formData, phoneNumber: e.target.value })
+                }
+                className="dark:bg-dark-700 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-success-300 focus:outline-hidden focus:ring-3 focus:ring-success-500/10 dark:border-gray-700 dark:bg-gray-700 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-success-800"
+              />
+            </div>
+            <div className="mb-3">
+              <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-400">
+                Hình ảnh sản phẩm <span className="text-red-500">*</span>
+              </label>
+
+              <InputMultipleUpload
+                selectedFiles={formData.selectedFiles}
+                onFilesSelect={(files: File[]) =>
+                  setFormData({ ...formData, selectedFiles: files })
+                }
+              />
+            </div>
+
+            <div className="mb-3">
+              <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-400">
+                Thời gian mở / đóng cửa (hh:mm:ss AM/PM)
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                <input
+                  type="time"
+                  step="1"
+                  value={formData.openTime}
+                  onChange={(e) =>
+                    setFormData({ ...formData, openTime: e.target.value })
+                  }
+                  placeholder="hh:mm:ss AM/PM"
+                  className="dark:bg-dark-700 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-success-300 focus:outline-hidden focus:ring-3 focus:ring-success-500/10 dark:border-gray-700 dark:bg-gray-700 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-success-800"
+                />
+                <input
+                  type="time"
+                  step="1"
+                  value={formData.closeTime}
+                  onChange={(e) =>
+                    setFormData({ ...formData, closeTime: e.target.value })
+                  }
+                  placeholder="hh:mm:ss AM/PM"
+                  className="dark:bg-dark-700 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-success-300 focus:outline-hidden focus:ring-3 focus:ring-success-500/10 dark:border-gray-700 dark:bg-gray-700 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-success-800"
+                />
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center gap-3 mt-6 modal-footer sm:justify-end">
+            <button
+              onClick={closeModalEdit}
+              type="button"
+              className="flex w-full justify-center rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] sm:w-auto"
+            >
+              Đóng
+            </button>
+            <button
+              onClick={onEditStore}
+              type="button"
+              className="btn btn-success btn-update-event flex w-full justify-center rounded-lg bg-success-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-success-600 sm:w-auto"
+            >
+              Chỉnh sửa
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={isModalDeleteOpen}
+        onClose={closeModalDelete}
+        className="max-w-[500px] p-6 lg:p-10"
+      >
+        <div className="flex flex-col px-2 overflow-y-auto custom-scrollbar">
+          <h5 className="mb-2 font-semibold text-gray-800 modal-title text-theme-xl dark:text-white/90 lg:text-2xl">
+            Bạn có chắc chắn muốn xóa không?
+          </h5>
+
+          <div className="flex items-center gap-3 mt-6 modal-footer sm:justify-end">
+            <button
+              onClick={closeModalDelete}
+              type="button"
+              className="flex w-full justify-center rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] sm:w-auto"
+            >
+              Đóng
+            </button>
+            <button
+              onClick={onDeleteStore}
+              type="button"
+              className="btn btn-success btn-update-event flex w-full justify-center rounded-lg bg-success-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-success-600 sm:w-auto"
+            >
+              Xóa
             </button>
           </div>
         </div>

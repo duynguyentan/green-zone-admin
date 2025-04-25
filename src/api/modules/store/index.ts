@@ -12,5 +12,8 @@ export const getStoreApi = (page: number): Promise<PaginationResult<IStore>> =>
 export const createStoreApi = (payload: ICreateStore) =>
   axios.post(`${appSettings.V1}/store/create`, payload);
 
+export const editStoreApi = (storeId: string, payload: ICreateStore) =>
+  axios.put(`${appSettings.V1}/store/${storeId}`, payload);
+
 export const deleteStoreApi = (storeId: string): Promise<IStore> =>
   axios.delete(`${appSettings.V1}/store/${storeId}`);
