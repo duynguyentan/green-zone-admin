@@ -13,7 +13,7 @@ export const OrderStatusLabel: Record<OrderStatus, string> = {
   [OrderStatus.AWAITING_PAYMENT]: 'Chờ thanh toán',
   [OrderStatus.PENDING_CONFIRMATION]: 'Chờ xác nhận đơn',
   [OrderStatus.PROCESSING]: 'Thực hiện đơn',
-  [OrderStatus.READY_FOR_PICKUP]: 'Sẵn sàng giao',
+  [OrderStatus.READY_FOR_PICKUP]: 'Đơn hàng sẵn sàng',
   [OrderStatus.SHIPPING_ORDER]: 'Đang giao hàng',
   [OrderStatus.COMPLETED]: 'Hoàn tất',
   [OrderStatus.CANCELLED]: 'Đã hủy',

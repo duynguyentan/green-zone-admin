@@ -265,12 +265,12 @@ export default function StoreList() {
                 >
                   Địa chỉ
                 </TableCell>
-                <TableCell
+                {/* <TableCell
                   isHeader
                   className="px-5 py-4 font-semibold text-gray-500 text-center text-theme-xs dark:text-gray-400"
                 >
                   Thời gian tạo
-                </TableCell>
+                </TableCell> */}
               </TableRow>
             </TableHeader>
 
@@ -298,9 +298,9 @@ export default function StoreList() {
                   <TableCell className="px-4 py-3 text-gray-600 text-center text-theme-sm dark:text-gray-400">
                     {store.address}
                   </TableCell>
-                  <TableCell className="px-4 py-3 text-gray-600 text-center text-theme-sm dark:text-gray-400">
+                  {/* <TableCell className="px-4 py-3 text-gray-600 text-center text-theme-sm dark:text-gray-400">
                     {formatDate(store.createdAt)}
-                  </TableCell>
+                  </TableCell> */}
                   <TableCell className="px-4 py-3 text-gray-700 text-center text-theme-sm dark:text-gray-400">
                     <div className="relative inline-block">
                       <button

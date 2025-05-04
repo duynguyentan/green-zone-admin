@@ -280,7 +280,8 @@ const OrderDetail: React.FC<OrderDetailProps> = ({
                   <span className="text-sm font-medium text-gray-800 dark:text-white/90">
                     {orderDetail.status === OrderStatus.COMPLETED ||
                     (orderDetail.paymentMethod === 'online' &&
-                      orderDetail.status !== OrderStatus.AWAITING_PAYMENT) ? (
+                      orderDetail.status !== OrderStatus.AWAITING_PAYMENT) ||
+                    orderDetail.deliveryMethod === 'pickup' ? (
                       <Badge size="sm" color="success">
                         Đã thanh toán
                       </Badge>

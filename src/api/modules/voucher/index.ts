@@ -13,5 +13,8 @@ export const createVoucherApi = (
 ): Promise<IVoucher[]> =>
   axios.post(`${appSettings.V1}/voucher/create`, payload);
 
+export const updateVoucherApi = (voucherId: string, payload: ICreateVoucher) =>
+  axios.put(`${appSettings.V1}/voucher/${voucherId}`, payload);
+
 export const deleteVoucherApi = (voucherId: string) =>
   axios.delete(`${appSettings.V1}/voucher/${voucherId}`);

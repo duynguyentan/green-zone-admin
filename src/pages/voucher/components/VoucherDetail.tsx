@@ -117,6 +117,19 @@ const VoucherDetail: React.FC<VoucherDetailProps> = ({
               </span>
             </div>
 
+            <div className="flex items-center  text-gray-600 dark:text-gray-400 gap-2 mb-4">
+              <h6 className="flex items-center gap-1 text-xs leading-normal text-gray-500 dark:text-gray-400">
+                <LockIcon />
+                Giá trị:
+              </h6>
+
+              <span className="text-sm font-medium text-gray-800 dark:text-white/90">
+                {voucher.status === 'active'
+                  ? 'Đang hoạt động'
+                  : 'Ngưng hoạt động'}
+              </span>
+            </div>
+
             <div className="flex items-center text-gray-600 dark:text-gray-400 gap-2 mb-4">
               <h6 className="flex items-center gap-1 text-xs leading-normal text-gray-500 dark:text-gray-400">
                 <TimeIcon />
