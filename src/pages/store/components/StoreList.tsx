@@ -20,7 +20,6 @@ import { DropdownItem } from '../../../components/ui/dropdown/DropdownItem';
 import { Modal } from '../../../components/ui/modal';
 import { uploadMultipleFilesApi } from '../../../api/modules/upload';
 import Alert from '../../../components/ui/alert/Alert';
-import { formatDate } from '../../../common/utils/dateUtils';
 import { IStore } from '../models/store.interface';
 import StoreDetail from './StoreDetail';
 import BasePagination from '../../../components/pagination/BasePagination';
