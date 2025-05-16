@@ -1,0 +1,10 @@
+services:
+  green-zone-admin:
+    image: green-zone-admin
+    build: .
+    container_name: green-zone-admin
+    restart: always
+    ports:
+      - '5173:5173'
+    expose:
+      - 5173
